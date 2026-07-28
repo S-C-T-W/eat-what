@@ -238,7 +238,8 @@
     "upcoming": "Upcoming plans",
     "breakfast": "Breakfast",
     "tea": "Tea time",
-    "lateNight": "Late-night bites"
+    "lateNight": "Late-night bites",
+    "manualBadge": "Logged by hand (no draw)"
   },
   "pwa": {
     "iosTitle": "Install EatWhat",
@@ -375,5 +376,17 @@
     "star3": "Okay",
     "star4": "Good",
     "star5": "Love it"
+  },
+  "manual": {
+    "cta": "Log a meal",
+    "title": "Log a meal",
+    "subtitle": "Ate somewhere without drawing? Put it in your diary — it counts toward streaks and the Favourites wheel too.",
+    "searchPlaceholder": "Restaurant name or keyword…",
+    "noResults": "Nothing found nearby — try another keyword or the exact name.",
+    "change": "change",
+    "when": "When did you eat?",
+    "diaryNext": "the diary opens right after saving ✍️",
+    "save": "Save to my history",
+    "quotaHint": "Each search uses 1 SearchText call from your daily quota."
   }
 }

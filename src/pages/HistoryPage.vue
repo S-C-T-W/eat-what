@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { DrawRecord, Meal, PlaceNote, Restaurant } from '@/types/models'
+import AddMealSheet from '@/components/history/AddMealSheet.vue'
 import DiarySheet from '@/components/history/DiarySheet.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import SwipeToDelete from '@/components/ui/SwipeToDelete.vue'
@@ -78,6 +79,13 @@ function openDiary(r: Restaurant) {
   diaryOpen.value = true
 }
 
+// Manual meal logging → straight into the diary for that place
+const addOpen = ref(false)
+async function onMealLogged(r: Restaurant) {
+  await load()
+  openDiary(r)
+}
+
 // Swipe-to-delete: one open row at a time, iOS style
 const openRowId = ref<number | null>(null)
 async function removeRecord(id: number | undefined) {
@@ -90,7 +98,16 @@ async function removeRecord(id: number | undefined) {
 
 <template>
   <div class="mx-auto max-w-md px-6 pt-10">
-    <h1 class="mb-4 text-2xl font-bold">{{ t('nav.history') }}</h1>
+    <div class="mb-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold">{{ t('nav.history') }}</h1>
+      <button
+        type="button"
+        class="rounded-full border border-orange-300 bg-orange-500/10 px-3 py-1.5 text-sm font-semibold text-orange-600 active:scale-95 dark:border-orange-800 dark:text-orange-400"
+        @click="addOpen = true"
+      >
+        ➕ {{ t('manual.cta') }}
+      </button>
+    </div>
 
     <!-- upcoming plans (future draws) -->
     <section v-if="upcoming.length" class="mb-6">
@@ -214,6 +231,13 @@ async function removeRecord(id: number | undefined) {
                   👥
                 </span>
                 <span
+                  v-else-if="rec.source === 'manual'"
+                  class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                  :title="t('history.manualBadge')"
+                >
+                  📔
+                </span>
+                <span
                   v-if="notes.get(rec.restaurant.id)?.myRating"
                   class="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
                 >
@@ -240,5 +264,6 @@ async function removeRecord(id: number | undefined) {
 
     <ResultCard :restaurant="selected" :open="cardOpen" @close="cardOpen = false" />
     <DiarySheet :restaurant="diaryFor" :open="diaryOpen" @close="diaryOpen = false" @saved="load" />
+    <AddMealSheet :open="addOpen" @close="addOpen = false" @saved="onMealLogged" />
   </div>
 </template>

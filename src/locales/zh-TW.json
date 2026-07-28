@@ -238,7 +238,8 @@
     "upcoming": "即將嘅計劃",
     "breakfast": "早餐",
     "tea": "下午茶",
-    "lateNight": "宵夜"
+    "lateNight": "宵夜",
+    "manualBadge": "手動補記（冇抽過）"
   },
   "pwa": {
     "iosTitle": "安裝食乜好",
@@ -375,5 +376,17 @@
     "star3": "一般",
     "star4": "好食",
     "star5": "至愛"
+  },
+  "manual": {
+    "cta": "補返一餐",
+    "title": "補返一餐",
+    "subtitle": "冇抽但食咗？寫返落食記 — 連續日數同「常去嗰啲」抽法都會計埋佢。",
+    "searchPlaceholder": "餐廳名或者關鍵字…",
+    "noResults": "附近搵唔到 — 試下另一個關鍵字或者全名。",
+    "change": "改",
+    "when": "幾時食㗎？",
+    "diaryNext": "儲存之後即刻開食記 ✍️",
+    "save": "儲存落我嘅紀錄",
+    "quotaHint": "每次搜尋用你每日配額入面 1 個 SearchText。"
   }
 }

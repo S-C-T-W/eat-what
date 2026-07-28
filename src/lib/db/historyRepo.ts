@@ -25,9 +25,12 @@ function dayKey(ts: number): string {
 }
 
 export interface AddAcceptedOpts {
-  source?: 'group'
+  source?: 'group' | 'manual'
   /** Epoch ms of the planned meal (future draws) */
   plannedAt?: number
+  /** Backdate the record (manual diary entries): becomes the timestamp,
+   *  drives the meal slot and the day it files under */
+  at?: number
 }
 
 /** When the meal actually happens: the planned slot if any, else accept time. */
@@ -42,7 +45,7 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
       conditions: DrawConditions,
       opts: AddAcceptedOpts = {},
     ): Promise<void> {
-      const ts = now()
+      const ts = opts.at ?? now()
       const mealTs = opts.plannedAt ?? ts
       await db.draws.add({
         timestamp: ts,

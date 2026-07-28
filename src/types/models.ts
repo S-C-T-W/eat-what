@@ -108,8 +108,9 @@ export interface DrawRecord {
   conditions: DrawConditions
   restaurant: Restaurant
   action: DrawAction
-  /** 'group' = accepted from a friends-draw room; absent = solo draw */
-  source?: 'group'
+  /** 'group' = from a friends-draw room · 'manual' = diary entry logged by
+   *  hand (no draw happened) · absent = solo draw */
+  source?: 'group' | 'manual'
   /** Epoch ms of the planned meal (future draws) — shows under 📅 Upcoming
    *  until the time passes, then files into the timeline on that day */
   plannedAt?: number

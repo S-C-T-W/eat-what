@@ -121,6 +121,24 @@ describe('historyRepo planned draws', () => {
     expect(later[0]!.records[0]!.restaurant.id).toBe('plan')
   })
 
+  it('manual entries backdate: timestamp, meal slot and day all follow `at`', async () => {
+    const nowTs = new Date('2026-07-12T20:00:00').getTime()
+    const repo = createHistoryRepo(freshDb(), () => nowTs)
+    const yesterdayTea = new Date('2026-07-11T15:30:00').getTime()
+    await repo.addAccepted(restaurant('m'), makeDefaultConditions(), {
+      source: 'manual',
+      at: yesterdayTea,
+    })
+    const groups = await repo.listGroupedByDay()
+    expect(groups[0]!.day).toBe('2026-07-11')
+    const rec = groups[0]!.records[0]!
+    expect(rec.timestamp).toBe(yesterdayTea)
+    expect(rec.meal).toBe('tea')
+    expect(rec.source).toBe('manual')
+    // backdated meals count for the recent-exclusion window
+    expect((await repo.recentAcceptedPlaceIds(3)).has('m')).toBe(true)
+  })
+
   it('group source and plannedAt persist together', async () => {
     const t = new Date('2026-07-10T15:00:00').getTime()
     const repo = createHistoryRepo(freshDb(), () => t)
