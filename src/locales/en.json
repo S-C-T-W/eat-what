@@ -115,7 +115,10 @@
       "multiHint": "Up to 5 spots, each searched with the main distance radius. Craving tags search around spot #1.",
       "corridorPickPlaceholder": "Search a place for point {end}…",
       "width": "Corridor width",
-      "corridorHint": "Finds places within the width band along the A→B line (up to 8 km apart). Unset ends use your current location."
+      "corridorHint": "Finds places within the width band along the A→B line (up to 8 km apart). Unset ends use your current location.",
+      "basePlaceholder": "Shift from another place? Search it…",
+      "mapFailed": "Map preview unavailable on this device.",
+      "mapApprox": "Preview centred on your last known area — the actual draw uses live location."
     }
   },
   "result": {

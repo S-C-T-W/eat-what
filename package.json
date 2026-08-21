@@ -29,6 +29,7 @@
     "canvas-confetti": "^1.9.4",
     "dexie": "^4.4.4",
     "jsqr": "^1.4.0",
+    "maplibre-gl": "^6.5.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "qrcode": "^1.5.4",

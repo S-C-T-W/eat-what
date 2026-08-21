@@ -59,8 +59,9 @@ export interface OriginSpot {
 export interface OriginSetting {
   mode: 'gps' | 'picked' | 'offset' | 'multi' | 'corridor'
   picked?: OriginSpot
-  /** Shift from current location; sector 0 = full circle, else 90/180 wedge */
-  offset?: { bearing: number; meters: number; sector: 0 | 90 | 180 }
+  /** Shift/sector from a base point (null/absent = current location);
+   *  sector 0 = full circle, else 90/180 wedge apexed at the base */
+  offset?: { base?: OriginSpot | null; bearing: number; meters: number; sector: 0 | 90 | 180 }
   /** 1–5 spots, union of equal-radius circles */
   spots?: (OriginSpot | null)[]
   corridor?: { a: OriginSpot | null; b: OriginSpot | null; widthMeters: number }

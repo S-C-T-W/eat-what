@@ -115,7 +115,10 @@
       "multiHint": "最多 5 個點，每個點用主距離滑桿做半徑。口味標籤只圍住第 1 點搜。",
       "corridorPickPlaceholder": "搜尋 {end} 點嘅位置…",
       "width": "走廊闊度",
-      "corridorHint": "搵 A→B 沿線闊度範圍內嘅餐廳（兩點最遠 8 公里）。未設定嘅一端會用你而家位置。"
+      "corridorHint": "搵 A→B 沿線闊度範圍內嘅餐廳（兩點最遠 8 公里）。未設定嘅一端會用你而家位置。",
+      "basePlaceholder": "想由第二度偏移？搜尋個地點…",
+      "mapFailed": "呢部機開唔到地圖預覽。",
+      "mapApprox": "預覽以上次已知位置示意 — 真正抽嘅時候會用即時位置。"
     }
   },
   "result": {

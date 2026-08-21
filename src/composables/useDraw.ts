@@ -57,21 +57,25 @@ export function useDraw() {
     }
 
     if (o.mode === 'offset') {
-      const fix = await gpsFix()
-      if (!fix) return null
       const off = o.offset ?? { bearing: 90, meters: 300, sector: 0 as const }
+      // Base = a searched spot, or the current location
+      let base = off.base?.location ?? null
+      if (!base) {
+        base = await gpsFix()
+        if (!base) return null
+      }
       if (off.sector !== 0) {
-        // Direction-limited exploration: wedge apex at the CURRENT location
+        // Direction-limited exploration: wedge apexed at the base
         const geometry: Geometry = {
           kind: 'sector',
-          center: fix,
+          center: base,
           radius,
           bearing: off.bearing,
           angle: off.sector,
         }
-        return { origin: fix, geometry }
+        return { origin: base, geometry }
       }
-      const center = offsetPoint(fix, off.bearing, off.meters)
+      const center = offsetPoint(base, off.bearing, off.meters)
       return { origin: center, geometry: { kind: 'circle', center, radius } }
     }
 

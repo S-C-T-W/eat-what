@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { OriginSpot } from '@/types/models'
 import RangeSlider from '@/components/ui/RangeSlider.vue'
+import OriginMapPreview from './OriginMapPreview.vue'
 import PlaceSearchField from './PlaceSearchField.vue'
 import { useDrawStore } from '@/stores/draw'
 
@@ -46,6 +47,10 @@ function exitAdvanced() {
 }
 
 // ── offset controls ──
+const offsetBase = computed(() => origin.value.offset?.base ?? null)
+function setOffsetBase(base: OriginSpot | null) {
+  drawStore.conditions.origin = { mode: 'offset', offset: { ...offset.value, base } }
+}
 const DIRECTIONS: { bearing: number; arrow: string; key: string }[] = [
   { bearing: 315, arrow: '↖', key: 'nw' },
   { bearing: 0, arrow: '↑', key: 'n' },
@@ -144,6 +149,9 @@ const modeChip = (active: boolean) =>
     </button>
 
     <div v-if="open" class="mt-2 space-y-3 rounded-2xl border border-stone-200 p-3 dark:border-stone-800">
+      <!-- live projection of the search area (OSM + overlay) -->
+      <OriginMapPreview />
+
       <!-- mode chips -->
       <div class="flex flex-wrap gap-2">
         <button type="button" class="rounded-full border px-3 py-1.5 text-sm transition-all active:scale-95" :class="modeChip(origin.mode === 'offset')" @click="enterOffset">
@@ -167,6 +175,22 @@ const modeChip = (active: boolean) =>
 
       <!-- offset / direction -->
       <template v-if="origin.mode === 'offset'">
+        <!-- base: current location, or any searched spot -->
+        <div class="flex items-center gap-2 rounded-xl border border-stone-200 px-3 py-1.5 text-sm dark:border-stone-800">
+          <span class="min-w-0 flex-1 truncate">
+            {{ offsetBase ? `🎯 ${offsetBase.label}` : `📍 ${t('conditions.originGps')}` }}
+          </span>
+          <button
+            v-if="offsetBase"
+            type="button"
+            class="shrink-0 text-stone-400"
+            :aria-label="t('conditions.originGps')"
+            @click="setOffsetBase(null)"
+          >
+            ✕
+          </button>
+        </div>
+        <PlaceSearchField :placeholder="t('conditions.adv.basePlaceholder')" @picked="setOffsetBase" />
         <div class="flex items-start gap-4">
           <div class="grid w-28 shrink-0 grid-cols-3 gap-1">
             <button
