@@ -2,6 +2,12 @@ import { computed } from 'vue'
 
 import type { LatLng, RelaxationSuggestion } from '@/types/models'
 import { runDraw, styleWeight, STALE_ORIGIN_METERS } from '@/lib/draw/engine'
+import {
+  CORRIDOR_MAX_LENGTH,
+  offsetPoint,
+  primaryAnchor,
+  type Geometry,
+} from '@/lib/geo/geometry'
 import { effectivePatterns } from '@/lib/places/chains'
 import { plannedEpoch } from '@/lib/draw/planning'
 import { GooglePlacesError } from '@/lib/places/googlePlaces'
@@ -28,14 +34,90 @@ export function useDraw() {
   const busy = computed(() => drawStore.phase === 'loading' || drawStore.phase === 'spinning')
   const isDemo = computed(() => !settings.googleApiKey)
 
-  async function resolveOrigin(): Promise<LatLng | null> {
-    const origin = drawStore.conditions.origin
-    if (origin.mode === 'picked' && origin.picked) return origin.picked.location
+  async function gpsFix(): Promise<LatLng | null> {
     if (isDemo.value) return DEMO_ORIGIN
     const fix = await getCurrentLocation()
     if (fix.ok) return fix.location
     drawStore.errorKey = fix.reason === 'denied' ? 'draw.locationDenied' : 'draw.locationFailed'
     return null
+  }
+
+  /**
+   * Turn the origin setting into a concrete anchor + (for advanced modes)
+   * a search Geometry. GPS is fetched only when some part needs it.
+   */
+  async function resolveGeometry(): Promise<{ origin: LatLng; geometry?: Geometry } | null> {
+    const o = drawStore.conditions.origin
+    const radius = drawStore.conditions.radiusMeters
+
+    if (o.mode === 'picked' && o.picked) return { origin: o.picked.location }
+    if (o.mode === 'gps' || o.mode === 'picked') {
+      const fix = await gpsFix()
+      return fix ? { origin: fix } : null
+    }
+
+    if (o.mode === 'offset') {
+      const fix = await gpsFix()
+      if (!fix) return null
+      const off = o.offset ?? { bearing: 90, meters: 300, sector: 0 as const }
+      if (off.sector !== 0) {
+        // Direction-limited exploration: wedge apex at the CURRENT location
+        const geometry: Geometry = {
+          kind: 'sector',
+          center: fix,
+          radius,
+          bearing: off.bearing,
+          angle: off.sector,
+        }
+        return { origin: fix, geometry }
+      }
+      const center = offsetPoint(fix, off.bearing, off.meters)
+      return { origin: center, geometry: { kind: 'circle', center, radius } }
+    }
+
+    if (o.mode === 'multi') {
+      const raw = (o.spots ?? []).slice(0, 5)
+      if (!raw.length) {
+        const fix = await gpsFix()
+        return fix ? { origin: fix } : null
+      }
+      let fix: LatLng | null = null
+      if (raw.some((s) => s === null)) {
+        fix = await gpsFix()
+        if (!fix) return null
+      }
+      const spots = raw.map((s) => s?.location ?? fix!)
+      const geometry: Geometry = { kind: 'multi', spots, radius }
+      return { origin: primaryAnchor(geometry), geometry }
+    }
+
+    // corridor
+    const c = o.corridor
+    if (!c) {
+      const fix = await gpsFix()
+      return fix ? { origin: fix } : null
+    }
+    let fix: LatLng | null = null
+    if (c.a === null || c.b === null) {
+      fix = await gpsFix()
+      if (!fix) return null
+    }
+    const a = c.a?.location ?? fix!
+    const b = c.b?.location ?? fix!
+    if (haversineMeters(a, b) < 50) {
+      // both ends effectively the same point — behave as a plain circle
+      return { origin: a }
+    }
+    if (haversineMeters(a, b) > CORRIDOR_MAX_LENGTH) {
+      drawStore.errorKey = 'draw.corridorTooLong'
+      return null
+    }
+    const geometry: Geometry = { kind: 'corridor', a, b, width: c.widthMeters }
+    return { origin: primaryAnchor(geometry), geometry }
+  }
+
+  async function resolveOrigin(): Promise<LatLng | null> {
+    return (await resolveGeometry())?.origin ?? null
   }
 
   /**
@@ -51,11 +133,12 @@ export function useDraw() {
     drawStore.relaxations = []
     drawStore.phase = 'loading'
     try {
-      const origin = await resolveOrigin()
-      if (!origin) {
+      const resolved = await resolveGeometry()
+      if (!resolved) {
         drawStore.phase = 'idle'
         return false
       }
+      const { origin, geometry } = resolved
       const region = detectRegion(origin, 'HK')
       const provider = getProvider(settings.googleApiKey)
       const cond = drawStore.conditions
@@ -96,6 +179,7 @@ export function useDraw() {
             : new Set(),
         notes,
         chainPatterns: effectivePatterns(settings.chainDisabled, settings.chainCustom),
+        geometry,
         weights,
       })
       drawStore.setOutcome(outcome, origin, region)
@@ -173,7 +257,14 @@ export function useDraw() {
         cond.excludeRecentDays = null
         break
       case 'widenRadius':
-        if (s.nextRadius) cond.radiusMeters = s.nextRadius
+        if (s.nextRadius) {
+          // corridor mode: "widen" grows the corridor, not the radius
+          if (cond.origin.mode === 'corridor' && cond.origin.corridor) {
+            cond.origin.corridor.widthMeters = s.nextRadius
+          } else {
+            cond.radiusMeters = s.nextRadius
+          }
+        }
         break
     }
     await startDraw()

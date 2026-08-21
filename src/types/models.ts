@@ -46,9 +46,24 @@ export interface Restaurant {
   fetchedAt: number
 }
 
+export interface OriginSpot {
+  label: string
+  location: LatLng
+}
+
+/**
+ * Where (and in what shape) to search. 'gps'/'picked' are the simple modes;
+ * the advanced trio hides behind the ⚙️ disclosure in the drawer.
+ * A null spot/endpoint means "current location, resolved at draw time".
+ */
 export interface OriginSetting {
-  mode: 'gps' | 'picked'
-  picked?: { label: string; location: LatLng }
+  mode: 'gps' | 'picked' | 'offset' | 'multi' | 'corridor'
+  picked?: OriginSpot
+  /** Shift from current location; sector 0 = full circle, else 90/180 wedge */
+  offset?: { bearing: number; meters: number; sector: 0 | 90 | 180 }
+  /** 1–5 spots, union of equal-radius circles */
+  spots?: (OriginSpot | null)[]
+  corridor?: { a: OriginSpot | null; b: OriginSpot | null; widthMeters: number }
 }
 
 /** Every condition supports "Any": empty arrays / null mean unconstrained. */

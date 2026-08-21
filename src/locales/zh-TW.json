@@ -32,7 +32,8 @@
       "widenRadius": "擴大到 {radius}",
       "dropRequirePrice": "接受冇價錢資料嘅餐廳",
       "dropChains": "接受連鎖／快餐"
-    }
+    },
+    "corridorTooLong": "A 同 B 距離太遠 — 請保持喺 8 公里以內。"
   },
   "conditions": {
     "title": "抽選條件",
@@ -88,7 +89,34 @@
     "requirePrice": "只要有價錢資料嘅餐廳",
     "noFastFood": "唔要快餐",
     "noChains": "唔要連鎖店",
-    "noChainsHint": "靠品牌名單認人，加埋「搜尋範圍內開咗 2 間或以上」嘅自動偵測。"
+    "noChainsHint": "靠品牌名單認人，加埋「搜尋範圍內開咗 2 間或以上」嘅自動偵測。",
+    "adv": {
+      "title": "進階範圍",
+      "offset": "偏移",
+      "multi": "多點",
+      "corridor": "A→B",
+      "simple": "簡單模式",
+      "fullCircle": "全方向",
+      "offsetHint": "以你位置向{dir}移 {m} 米做圓心，照常搜個圓。",
+      "sectorHint": "只搜你位置向{dir}嗰 {deg}° 扇形範圍。",
+      "dir": {
+        "n": "北",
+        "ne": "東北",
+        "e": "東",
+        "se": "東南",
+        "s": "南",
+        "sw": "西南",
+        "w": "西",
+        "nw": "西北",
+        "here": "呢度"
+      },
+      "spotCount": "{n} 個點",
+      "addSpotPlaceholder": "搜尋加一個點…",
+      "multiHint": "最多 5 個點，每個點用主距離滑桿做半徑。口味標籤只圍住第 1 點搜。",
+      "corridorPickPlaceholder": "搜尋 {end} 點嘅位置…",
+      "width": "走廊闊度",
+      "corridorHint": "搵 A→B 沿線闊度範圍內嘅餐廳（兩點最遠 8 公里）。未設定嘅一端會用你而家位置。"
+    }
   },
   "result": {
     "openNow": "營業中",

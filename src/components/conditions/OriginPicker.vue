@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { watchDebounced } from '@vueuse/core'
 
 import type { PlaceSuggestion } from '@/types/models'
+import AdvancedOriginPanel from './AdvancedOriginPanel.vue'
 import { getProvider } from '@/lib/places'
 import { DEMO_ORIGIN } from '@/lib/places/mockProvider'
 import { useDrawStore } from '@/stores/draw'
@@ -121,5 +122,8 @@ function useGps() {
         </button>
       </li>
     </ul>
+
+    <!-- advanced shapes live behind a disclosure so the drawer stays short -->
+    <AdvancedOriginPanel />
   </div>
 </template>

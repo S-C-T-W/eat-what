@@ -35,9 +35,21 @@ export function suggestRelaxations(
 
   out.sort((a, b) => b.resultCount - a.resultCount)
 
-  const nextRadius = nextRadiusStep(cond.radiusMeters)
-  if (nextRadius !== null) {
-    out.push({ kind: 'widenRadius', resultCount: 0, requiresRefetch: true, nextRadius })
+  // "Widen" grows the active shape: corridor mode widens the corridor,
+  // everything else widens the radius. nextRadius carries either value.
+  const corridor = cond.origin.mode === 'corridor' ? cond.origin.corridor : undefined
+  if (corridor) {
+    const nextWidth = CORRIDOR_WIDTH_STEPS.find((w) => w > corridor.widthMeters)
+    if (nextWidth !== undefined) {
+      out.push({ kind: 'widenRadius', resultCount: 0, requiresRefetch: true, nextRadius: nextWidth })
+    }
+  } else {
+    const nextRadius = nextRadiusStep(cond.radiusMeters)
+    if (nextRadius !== null) {
+      out.push({ kind: 'widenRadius', resultCount: 0, requiresRefetch: true, nextRadius })
+    }
   }
   return out
 }
+
+export const CORRIDOR_WIDTH_STEPS = [300, 500, 1000, 1500, 2000] as const

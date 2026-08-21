@@ -32,7 +32,8 @@
       "widenRadius": "Widen to {radius}",
       "dropRequirePrice": "Allow places without price data",
       "dropChains": "Allow chains & fast food"
-    }
+    },
+    "corridorTooLong": "A and B are too far apart — keep them within 8 km."
   },
   "conditions": {
     "title": "Draw conditions",
@@ -88,7 +89,34 @@
     "requirePrice": "Only places with price data",
     "noFastFood": "No fast food",
     "noChains": "No chain stores",
-    "noChainsHint": "Recognized by a curated brand list, plus any brand with 2+ branches inside your search range."
+    "noChainsHint": "Recognized by a curated brand list, plus any brand with 2+ branches inside your search range.",
+    "adv": {
+      "title": "Advanced area",
+      "offset": "Shift",
+      "multi": "Spots",
+      "corridor": "A→B",
+      "simple": "Simple mode",
+      "fullCircle": "All around",
+      "offsetHint": "Search a full circle shifted {m} m to the {dir} of your location.",
+      "sectorHint": "Search only the {deg}° wedge toward {dir} from your location.",
+      "dir": {
+        "n": "north",
+        "ne": "northeast",
+        "e": "east",
+        "se": "southeast",
+        "s": "south",
+        "sw": "southwest",
+        "w": "west",
+        "nw": "northwest",
+        "here": "here"
+      },
+      "spotCount": "{n} spots",
+      "addSpotPlaceholder": "Add a spot by search…",
+      "multiHint": "Up to 5 spots, each searched with the main distance radius. Craving tags search around spot #1.",
+      "corridorPickPlaceholder": "Search a place for point {end}…",
+      "width": "Corridor width",
+      "corridorHint": "Finds places within the width band along the A→B line (up to 8 km apart). Unset ends use your current location."
+    }
   },
   "result": {
     "openNow": "Open now",

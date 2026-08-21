@@ -28,6 +28,13 @@ import type { Region } from '@/lib/geo/region'
 import { bandWindow, windowsOverlap, type BudgetWindow } from '@/lib/format/price'
 import { cryptoRandomInt, shuffle, weightedRandomIndex } from './random'
 import { MAX_WHEEL_SEGMENTS, RADIUS_STEPS } from './defaults'
+import {
+  groupIndexOf,
+  inGeometry,
+  planCoverage,
+  primaryAnchor,
+  type Geometry,
+} from '@/lib/geo/geometry'
 import { suggestRelaxations } from './relaxation'
 
 /** Broad food-type net used when no cuisine is selected ("any cuisine"). */
@@ -45,6 +52,8 @@ export interface FilterContext {
   region: Region
   blockedIds: ReadonlySet<string>
   recentIds: ReadonlySet<string>
+  /** Advanced search shape; absent = classic circle around origin */
+  geometry?: Geometry
   /** Diner's own diary corrections by place id — newer truth than Google */
   notes?: ReadonlyMap<string, PlaceNote>
   /** Brand roots seen at 2+ locations in this search — local chain evidence */
@@ -79,10 +88,16 @@ export const STALE_ORIGIN_METERS = 200
 /**
  * Radius actually sent to the API / used in cache keys: the free-form slider
  * value snapped UP to the next fetch step, so 900 m and 1 km draws share one
- * cached search instead of each metre minting new billable calls.
+ * cached search instead of each metre minting new billable calls. The 8000
+ * step exists for merged coverage circles (multi-spot / corridor).
  */
+const FETCH_RADIUS_STEPS = [...RADIUS_STEPS, 8000] as const
+
 export function queryRadiusFor(radiusMeters: number): number {
-  return RADIUS_STEPS.find((r) => r >= radiusMeters) ?? RADIUS_STEPS[RADIUS_STEPS.length - 1]!
+  return (
+    FETCH_RADIUS_STEPS.find((r) => r >= radiusMeters) ??
+    FETCH_RADIUS_STEPS[FETCH_RADIUS_STEPS.length - 1]!
+  )
 }
 
 // Nearby ranking can be fuzzy at the boundary; allow a small grace margin
@@ -134,7 +149,13 @@ export function filterPool(
     } else if (excludedTypes.size && r.types.some((t) => excludedTypes.has(t))) {
       return false
     }
-    if (haversineMeters(ctx.origin, r.location) > cond.radiusMeters * RADIUS_GRACE) return false
+    // Shape check: the advanced geometry when set, the classic circle otherwise.
+    // Grace loosens sizes (radius/width) only — a sector's angle stays hard.
+    if (ctx.geometry) {
+      if (!inGeometry(r.location, ctx.geometry, RADIUS_GRACE)) return false
+    } else if (haversineMeters(ctx.origin, r.location) > cond.radiusMeters * RADIUS_GRACE) {
+      return false
+    }
 
     // -- soft filters --
     // Fast food by Google's own typing. The brand pattern list (curated
@@ -232,13 +253,40 @@ export function styleWeight(style: DrawStyle, acceptedCount: number): number {
 /**
  * Pick up to MAX_WHEEL_SEGMENTS candidates (uniformly — every match deserves
  * a wheel slot) and the winner among them, optionally weighted by id.
+ * With `groups` (multi-spot / corridor fairness), wheel slots are dealt
+ * round-robin across groups so a dense area can't drown out the others.
  */
 export function selectCandidates(
   pool: readonly Restaurant[],
   weights?: ReadonlyMap<string, number>,
+  groups?: ReadonlyMap<string, number>,
 ): Selection {
   if (pool.length === 0) return { candidates: [], winnerIndex: -1 }
-  const candidates = shuffle(pool).slice(0, MAX_WHEEL_SEGMENTS)
+  let candidates: Restaurant[]
+  if (groups && new Set([...groups.values()]).size > 1) {
+    const buckets = new Map<number, Restaurant[]>()
+    for (const r of shuffle(pool)) {
+      const idx = groups.get(r.id) ?? 0
+      const bucket = buckets.get(idx) ?? []
+      bucket.push(r)
+      buckets.set(idx, bucket)
+    }
+    const rings = [...buckets.values()]
+    candidates = []
+    for (let round = 0; candidates.length < MAX_WHEEL_SEGMENTS; round++) {
+      let dealt = false
+      for (const ring of rings) {
+        if (round < ring.length && candidates.length < MAX_WHEEL_SEGMENTS) {
+          candidates.push(ring[round]!)
+          dealt = true
+        }
+      }
+      if (!dealt) break
+    }
+    candidates = shuffle(candidates)
+  } else {
+    candidates = shuffle(pool).slice(0, MAX_WHEEL_SEGMENTS)
+  }
   if (!weights) return { candidates, winnerIndex: cryptoRandomInt(candidates.length) }
   const winnerIndex = weightedRandomIndex(candidates.map((c) => weights.get(c.id) ?? 1))
   return { candidates, winnerIndex }
@@ -254,6 +302,8 @@ export interface DrawEngineDeps {
   notes?: ReadonlyMap<string, PlaceNote>
   /** Chain patterns in force (Settings-editable) */
   chainPatterns?: readonly string[]
+  /** Advanced search shape (offset/sector/multi/corridor); absent = plain circle */
+  geometry?: Geometry
   /** Optional read-through cache (wired in with IndexedDB) */
   cache?: {
     get(key: string): Promise<Restaurant[] | null>
@@ -272,11 +322,16 @@ export interface DrawOutcome {
   relaxations: RelaxationSuggestion[]
 }
 
-export function searchCacheKey(origin: LatLng, cond: DrawConditions, lang: string): string {
+export function searchCacheKey(
+  origin: LatLng,
+  cond: DrawConditions,
+  lang: string,
+  radiusMeters = cond.radiusMeters,
+): string {
   const cell = `${origin.lat.toFixed(3)},${origin.lng.toFixed(3)}`
   const include = [...cond.cuisines.include].sort().join('+') || 'any'
   const exclude = [...cond.cuisines.exclude].sort().join('+') || 'none'
-  return `${cell}|${queryRadiusFor(cond.radiusMeters)}|${include}|${exclude}|${lang}`
+  return `${cell}|${queryRadiusFor(radiusMeters)}|${include}|${exclude}|${lang}`
 }
 
 /** One cache entry per fine-grained tag — reusable across tag combinations. */
@@ -294,6 +349,7 @@ async function fetchNearby(
   cond: DrawConditions,
   origin: LatLng,
   deps: DrawEngineDeps,
+  radiusMeters = cond.radiusMeters,
 ): Promise<Restaurant[]> {
   const includedTypes = cond.cuisines.include.length
     ? typesForCuisines(cond.cuisines.include)
@@ -303,13 +359,13 @@ async function fetchNearby(
   const includedSet = new Set(includedTypes)
   const excludedTypes = typesForCuisines(cond.cuisines.exclude).filter((t) => !includedSet.has(t))
 
-  const key = searchCacheKey(origin, cond, deps.lang)
+  const key = searchCacheKey(origin, cond, deps.lang, radiusMeters)
   const cached = await deps.cache?.get(key)
   if (cached) return cached
   const results = await deps.provider.searchNearby(
     {
       origin,
-      radiusMeters: queryRadiusFor(cond.radiusMeters),
+      radiusMeters: queryRadiusFor(radiusMeters),
       includedTypes,
       excludedTypes: excludedTypes.length ? excludedTypes : undefined,
       languageCode: deps.lang,
@@ -354,14 +410,23 @@ export async function runDraw(
     .filter((t): t is KeywordTag => t !== undefined)
     .slice(0, MAX_KEYWORD_TAGS)
 
-  // Fine tags act as extra "include" selections: results union with the
-  // type-based search. Tags alone ⇒ tag results only — a generic nearby
-  // sweep would drown 茶餐廳 hits in everything else.
+  // Advanced geometry expands to ≤3 planned fetch circles; the classic
+  // circle is one. Fine tags act as extra "include" selections anchored at
+  // the shape's primary point (the user's decision: tags search spot #1
+  // only). Tags alone ⇒ tag results only — a generic nearby sweep would
+  // drown 茶餐廳 hits in everything else.
+  const circles = deps.geometry
+    ? planCoverage(deps.geometry)
+    : [{ center: origin, radius: cond.radiusMeters }]
+  const anchor = deps.geometry ? primaryAnchor(deps.geometry) : origin
+
   const searches: Promise<Restaurant[]>[] = []
   if (cond.cuisines.include.length > 0 || tags.length === 0) {
-    searches.push(fetchNearby(cond, origin, deps))
+    for (const circle of circles) {
+      searches.push(fetchNearby(cond, circle.center, deps, circle.radius))
+    }
   }
-  for (const tag of tags) searches.push(fetchKeyword(tag, cond, origin, deps))
+  for (const tag of tags) searches.push(fetchKeyword(tag, cond, anchor, deps))
 
   const seen = new Set<string>()
   const raw = (await Promise.all(searches)).flat().filter((r) => {
@@ -375,6 +440,7 @@ export async function runDraw(
     region: deps.region,
     blockedIds: deps.blockedIds ?? new Set(),
     recentIds: deps.recentIds ?? new Set(),
+    geometry: deps.geometry,
     notes: deps.notes,
     chainBrands: multiBranchBrands(raw),
     chainPatterns: deps.chainPatterns,
@@ -391,6 +457,10 @@ export async function runDraw(
       relaxations: suggestRelaxations(raw, cond, ctx),
     }
   }
-  const { candidates, winnerIndex } = selectCandidates(pool, deps.weights)
+  // Multi-spot / corridor: deal wheel slots round-robin across spots/thirds
+  const groups = deps.geometry
+    ? new Map(pool.map((r) => [r.id, groupIndexOf(r.location, deps.geometry!)]))
+    : undefined
+  const { candidates, winnerIndex } = selectCandidates(pool, deps.weights, groups)
   return { pool, candidates, winnerIndex, relaxations: [] }
 }

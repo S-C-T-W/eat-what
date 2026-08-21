@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { DrawConditions, PlaceNote, Restaurant } from '@/types/models'
 import type { PlacesProvider } from '@/lib/places/provider'
+import { offsetPoint, type Geometry } from '@/lib/geo/geometry'
 import { makeDefaultConditions } from './defaults'
 import {
   ALL_FOOD_TYPES,
@@ -301,6 +302,78 @@ describe('conditionsFingerprint / queryRadiusFor', () => {
     expect(searchCacheKey(ORIGIN, cond({ radiusMeters: 900 }), 'en')).toBe(
       searchCacheKey(ORIGIN, cond({ radiusMeters: 1000 }), 'en'),
     )
+    // merged coverage circles land on the 8000 fetch step
+    expect(queryRadiusFor(6000)).toBe(8000)
+  })
+})
+
+describe('advanced geometry draws', () => {
+  const east = (m: number) => offsetPoint(ORIGIN, 90, m)
+
+  it('multi-spot: one nearby call per planned circle, union filtered by shape', async () => {
+    const spotB = east(6000)
+    const centers: { lat: number; lng: number }[] = []
+    const provider = {
+      kind: 'mock' as const,
+      async searchNearby(p: { origin: { lat: number; lng: number } }) {
+        centers.push(p.origin)
+        const n = centers.length
+        // distinct non-prefix names — brand dedupe must not collapse them
+        return [
+          place({ id: `hit-${n}`, name: n === 1 ? '金華冰廳' : '南記粉麵', location: p.origin }),
+          place({
+            id: `stray-${n}`,
+            name: n === 1 ? '飛天餃子' : '得龍大飯店',
+            location: offsetPoint(p.origin, 0, 3500),
+          }),
+        ]
+      },
+      async searchText() {
+        return []
+      },
+      async autocomplete() {
+        return []
+      },
+      async resolvePlaceLocation() {
+        return { location: ORIGIN, label: 'x' }
+      },
+      photoUrl() {
+        return null
+      },
+    }
+    const geometry: Geometry = { kind: 'multi', spots: [ORIGIN, spotB], radius: 800 }
+    const out = await runDraw(cond({ radiusMeters: 800 }), ORIGIN, {
+      provider,
+      lang: 'en',
+      region: 'HK',
+      geometry,
+    })
+    expect(centers).toHaveLength(2) // two far spots ⇒ two planned circles
+    expect(out.pool.map((r) => r.id).sort()).toEqual(['hit-1', 'hit-2']) // strays outside both spot circles
+  })
+
+  it('sector geometry drops the wrong half even when the fetch returned it', () => {
+    const g: Geometry = { kind: 'sector', center: ORIGIN, radius: 1000, bearing: 270, angle: 180 }
+    const raw = [
+      place({ id: 'west', location: offsetPoint(ORIGIN, 270, 500) }),
+      place({ id: 'east', location: east(500) }),
+    ]
+    const out = filterPool(raw, cond(), ctx({ geometry: g }))
+    expect(out.map((r) => r.id)).toEqual(['west'])
+  })
+
+  it('selectCandidates deals wheel slots round-robin across groups', () => {
+    const pool = [
+      ...Array.from({ length: 20 }, (_, i) => place({ id: `dense-${i}` })),
+      ...Array.from({ length: 3 }, (_, i) => place({ id: `sparse-${i}` })),
+    ]
+    const groups = new Map(pool.map((r) => [r.id, r.id.startsWith('dense') ? 0 : 1]))
+    for (let run = 0; run < 10; run++) {
+      const { candidates } = selectCandidates(pool, undefined, groups)
+      expect(candidates).toHaveLength(10)
+      const sparse = candidates.filter((c) => c.id.startsWith('sparse')).length
+      expect(sparse).toBe(3) // the sparse spot always keeps all its places on the wheel
+    }
   })
 })
 

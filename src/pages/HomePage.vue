@@ -63,6 +63,7 @@ const activeFilterCount = computed(() => {
     c.keywordsExclude.length +
     (c.noFastFood ? 1 : 0) +
     (c.noChains ? 1 : 0) +
+    (['offset', 'multi', 'corridor'].includes(c.origin.mode) ? 1 : 0) +
     (c.budgetRange ? 1 : 0) +
     (c.minRating !== null ? 1 : 0)
   )
