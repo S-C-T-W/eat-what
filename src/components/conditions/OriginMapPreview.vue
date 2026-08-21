@@ -68,6 +68,14 @@ function sync() {
 onMounted(async () => {
   try {
     const lib = await import('maplibre-gl')
+    // MapLibre v6 loads its worker as a SEPARATE module resolved at runtime —
+    // Vite doesn't see that reference, so production 404'd it (SPA fallback
+    // served index.html → "text/html MIME" error → blank canvas on real
+    // devices; field-debugged from Samson's console screenshot). The dist
+    // worker is a THIN entry importing shared chunks, so a plain ?url copy
+    // would 404 the same way — ?worker&url makes Vite BUNDLE it standalone.
+    const workerUrl = (await import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')).default
+    lib.setWorkerUrl(workerUrl)
     await import('maplibre-gl/dist/maplibre-gl.css')
     const { shape, points, bounds } = collection()
     const created = new lib.Map({

@@ -21,6 +21,7 @@
 - 走廊沿真實道路（直線走廊 only）
 
 > **GO 已於 2026-08-22 給出**（「今輪照 GO，map 下一輪做預覽」）。
+> **2026-08-22 深夜追加並出貨：** (1) map 預覽輪（OpenFreeMap tiles — Samson 拍板棄自托管改即用；MapLibre lazy chunk；overlay 投影四種幾何；CSP 加 `worker-src blob:`）；(2) 偏移基準點可以係任何搜尋到嘅地點（null＝現在位置）。視覺合成部分 headless 驗證唔到（隱藏 pane rAF 停頓），交 Samson 於裝置上肉眼 QA。
 
 ## Approach
 
