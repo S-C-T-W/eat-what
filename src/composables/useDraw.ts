@@ -148,6 +148,19 @@ export function useDraw() {
       const cond = drawStore.conditions
 
       const notes = await placeNotes.allByPlaceId()
+      // Visit diaries outrank legacy per-place fields: rating = AVERAGE of
+      // every visit's stars, spend/note = the latest visit's (point-in-time
+      // facts — latest wins, no averaging)
+      const diaryStats = await history.diaryStatsByPlaceId()
+      for (const [id, stats] of diaryStats) {
+        const base = notes.get(id) ?? { placeId: id, name: '', updatedAt: 0 }
+        notes.set(id, {
+          ...base,
+          ...(stats.ratedVisits ? { myRating: stats.avgRating } : {}),
+          ...(stats.latestSpend ? { spend: stats.latestSpend } : {}),
+          ...(stats.latestNote ? { note: stats.latestNote } : {}),
+        })
+      }
 
       // drawStyle: bias the winner pick by how often each place was accepted.
       // Places absent from the map default to weight 1 in selectCandidates,

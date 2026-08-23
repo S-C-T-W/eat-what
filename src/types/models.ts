@@ -117,6 +117,17 @@ export type DrawAction = 'accepted' | 'respun'
  *  lunch/dinner; nobody wants a push about 宵夜). */
 export type Meal = 'breakfast' | 'lunch' | 'tea' | 'dinner' | 'lateNight'
 
+/** One visit's diary — every history record can carry its own. */
+export interface VisitDiary {
+  /** This visit's verdict 1–5; the place's effective rating is the AVERAGE
+   *  across visits (Samson's spec: sum ÷ count) */
+  rating?: number
+  /** What I ate this time */
+  note?: string
+  /** What I paid per person this time */
+  spend?: BudgetWindow
+}
+
 export interface DrawRecord {
   id?: number
   timestamp: number
@@ -127,24 +138,27 @@ export interface DrawRecord {
   /** 'group' = from a friends-draw room · 'manual' = diary entry logged by
    *  hand (no draw happened) · absent = solo draw */
   source?: 'group' | 'manual'
+  /** Per-visit food diary (v3+; older visits simply have none yet) */
+  diary?: VisitDiary
   /** Epoch ms of the planned meal (future draws) — shows under 📅 Upcoming
    *  until the time passes, then files into the timeline on that day */
   plannedAt?: number
 }
 
 /**
- * The diner's own diary + corrections for one place. Where set, these are
- * treated as a NEWER source of truth than Google data in every future draw.
+ * PLACE-level corrections (visit-level diary lives on DrawRecord.diary
+ * since v3). Where set, these are treated as a NEWER source of truth than
+ * Google data in every future draw.
  */
 export interface PlaceNote {
   placeId: string
   name: string
-  /** Own rating 1–5 — outranks Google's rating in filters and favor-weights */
+  /** @deprecated v2 visit data — migrated onto the newest record at v3;
+   *  may linger only for places that never had a history record */
   myRating?: number
-  /** Food diary free text: what I ate, how it was */
+  /** @deprecated see myRating */
   note?: string
-  /** What I actually paid per person — exact (min===max) or a range;
-   *  replaces Google's price data in the budget filter */
+  /** @deprecated see myRating */
   spend?: BudgetWindow
   /** Corrected cuisines — replace Google types for include/exclude matching */
   cuisines?: CuisineId[]

@@ -1,14 +1,15 @@
 <script setup lang="ts">
 /**
- * Food diary editor for one visited place: what I ate, my own rating, and
- * corrections (price band / cuisines / craving tags) that future draws
- * treat as truer than Google. Blacklist and "permanently closed" live here
- * too, so history is where the user curates their own map.
+ * Diary editor for ONE VISIT (v3): this visit's rating / what I ate / what
+ * I paid — every history record carries its own, and the place's effective
+ * rating becomes the AVERAGE across visits. Place-level corrections
+ * (cuisines / craving tags / blacklist / closed) still live here because
+ * history is where the user curates their own map.
  */
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { Restaurant } from '@/types/models'
+import type { Restaurant, VisitDiary } from '@/types/models'
 import type { CuisineId } from '@/lib/places/cuisines'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import BudgetRangeSlider from '@/components/conditions/BudgetRangeSlider.vue'
@@ -16,18 +17,28 @@ import { CUISINES } from '@/lib/places/cuisines'
 import { KEYWORD_GROUPS, MAX_KEYWORD_TAGS } from '@/lib/places/keywords'
 import { formatBudgetWindow, type BudgetWindow } from '@/lib/format/price'
 import { detectRegion } from '@/lib/geo/region'
-import { createBlocklistRepo } from '@/lib/db/historyRepo'
+import { createBlocklistRepo, createHistoryRepo } from '@/lib/db/historyRepo'
 import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
 import { getDb } from '@/lib/db/schema'
 import { useHaptics } from '@/composables/useHaptics'
 
-const props = defineProps<{ open: boolean; restaurant: Restaurant | null }>()
+/** Enough of a DrawRecord to edit its diary */
+export interface DiaryTarget {
+  id?: number
+  restaurant: Restaurant
+  diary?: VisitDiary
+}
+
+const props = defineProps<{ open: boolean; record: DiaryTarget | null }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const { t, locale } = useI18n()
 const haptics = useHaptics()
 const notesRepo = createPlaceNotesRepo(getDb())
 const blocklist = createBlocklistRepo(getDb())
+const history = createHistoryRepo(getDb())
+
+const restaurant = computed(() => props.record?.restaurant ?? null)
 
 const MAX_CUISINES = 3
 const ALL_TAGS = KEYWORD_GROUPS.flatMap((g) => g.tags)
@@ -43,27 +54,33 @@ const form = reactive({
 })
 const wasBlacklisted = ref(false)
 const saving = ref(false)
+const aggregate = ref<{ avg: number; n: number } | null>(null)
 
 const region = computed(() =>
-  props.restaurant ? detectRegion(props.restaurant.location, 'HK') : 'HK',
+  restaurant.value ? detectRegion(restaurant.value.location, 'HK') : 'HK',
 )
 
 watch(
   () => props.open,
   async (open) => {
-    if (!open || !props.restaurant) return
-    const [note, blockedIds] = await Promise.all([
-      notesRepo.get(props.restaurant.id),
+    const rec = props.record
+    if (!open || !rec) return
+    const [note, blockedIds, stats] = await Promise.all([
+      notesRepo.get(rec.restaurant.id),
       blocklist.ids(),
+      history.diaryStatsByPlaceId(),
     ])
-    form.myRating = note?.myRating ?? 0
-    form.note = note?.note ?? ''
-    form.spend = note?.spend ? { ...note.spend } : null
+    // visit part comes from THIS record; place part from the place note
+    form.myRating = rec.diary?.rating ?? 0
+    form.note = rec.diary?.note ?? ''
+    form.spend = rec.diary?.spend ? { ...rec.diary.spend } : null
     form.cuisines = [...(note?.cuisines ?? [])]
     form.keywords = [...(note?.keywords ?? [])]
     form.closed = note?.closed ?? false
-    form.blacklisted = blockedIds.has(props.restaurant.id)
+    form.blacklisted = blockedIds.has(rec.restaurant.id)
     wasBlacklisted.value = form.blacklisted
+    const s = stats.get(rec.restaurant.id)
+    aggregate.value = s?.ratedVisits ? { avg: s.avgRating, n: s.ratedVisits } : null
   },
 )
 
@@ -80,16 +97,24 @@ function toggleKeyword(id: string) {
 }
 
 async function save() {
-  const r = props.restaurant
-  if (!r || saving.value) return
+  const rec = props.record
+  if (!rec || saving.value) return
+  const r = rec.restaurant
   saving.value = true
   try {
+    // this visit's diary → the record itself
+    if (rec.id !== undefined) {
+      const diary: VisitDiary = {
+        ...(form.myRating ? { rating: form.myRating } : {}),
+        ...(form.note.trim() ? { note: form.note.trim() } : {}),
+        ...(form.spend ? { spend: { ...form.spend } } : {}),
+      }
+      await history.setDiary(rec.id, Object.keys(diary).length ? diary : null)
+    }
+    // place-level corrections → the place note
     await notesRepo.upsert({
       placeId: r.id,
       name: r.name,
-      myRating: form.myRating || undefined,
-      note: form.note.trim() || undefined,
-      spend: form.spend ? { ...form.spend } : undefined,
       cuisines: form.cuisines.length ? [...form.cuisines] : undefined,
       keywords: form.keywords.length ? [...form.keywords] : undefined,
       closed: form.closed || undefined,
@@ -113,12 +138,18 @@ async function save() {
       <div>
         <h2 class="text-lg font-bold">✍️ {{ t('diary.title') }}</h2>
         <p class="text-sm text-stone-400 dark:text-stone-500">{{ restaurant.name }}</p>
+        <p
+          v-if="aggregate"
+          class="mt-1 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+        >
+          {{ t('diary.avgLine', { avg: aggregate.avg.toFixed(1), n: aggregate.n }) }}
+        </p>
       </div>
 
-      <!-- my rating -->
+      <!-- this visit's rating -->
       <section>
         <h3 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
-          {{ t('diary.myRating') }}
+          {{ t('diary.thisVisit') }}
         </h3>
         <div class="flex items-center gap-1">
           <button

@@ -43,9 +43,26 @@ let map: MapLike | null = null
 let loaded = false
 
 function currentGeometry() {
-  const base = drawStore.lastOrigin ?? DEMO_ORIGIN
-  usingFallbackBase.value = drawStore.lastOrigin === null
+  // live GPS (asked when the drawer opened) → last draw origin → demo
+  const base = drawStore.liveFix ?? drawStore.lastOrigin ?? DEMO_ORIGIN
+  usingFallbackBase.value = drawStore.liveFix === null && drawStore.lastOrigin === null
   return previewGeometry(drawStore.conditions.origin, drawStore.conditions.radiusMeters, base)
+}
+
+function meCollection() {
+  const fix = drawStore.liveFix
+  return {
+    type: 'FeatureCollection',
+    features: fix
+      ? [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: [fix.lng, fix.lat] },
+          },
+        ]
+      : [],
+  }
 }
 
 function collection() {
@@ -62,6 +79,7 @@ function sync() {
   const { shape, points, bounds } = collection()
   map.getSource('area')?.setData(shape)
   map.getSource('spots')?.setData(points)
+  map.getSource('me')?.setData(meCollection())
   map.fitBounds(bounds, { padding: 28, duration: 250, maxZoom: 15 })
 }
 
@@ -130,6 +148,19 @@ onMounted(async () => {
         },
         paint: { 'text-color': '#ea580c', 'text-halo-color': '#ffffff', 'text-halo-width': 1.5 },
       })
+      // the classic blue "you are here" dot (only when a live fix exists)
+      created.addSource('me', { type: 'geojson', data: meCollection() })
+      created.addLayer({
+        id: 'me-dot',
+        type: 'circle',
+        source: 'me',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#2563eb',
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2.5,
+        },
+      })
       loaded = true
       sync()
     }
@@ -148,7 +179,7 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [drawStore.conditions.origin, drawStore.conditions.radiusMeters],
+  () => [drawStore.conditions.origin, drawStore.conditions.radiusMeters, drawStore.liveFix],
   sync,
   { deep: true },
 )

@@ -406,7 +406,10 @@
     "star2": "Meh",
     "star3": "Okay",
     "star4": "Good",
-    "star5": "Love it"
+    "star5": "Love it",
+    "thisVisit": "This visit's rating",
+    "avgLine": "Average ⭐{avg} across {n} visits — the draw filter uses this",
+    "avgShort": "avg {avg}★ ({n})"
   },
   "manual": {
     "cta": "Log a meal",

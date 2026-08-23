@@ -2,19 +2,17 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { DrawRecord, Meal, PlaceNote, Restaurant } from '@/types/models'
+import type { DrawRecord, Meal, Restaurant } from '@/types/models'
 import AddMealSheet from '@/components/history/AddMealSheet.vue'
-import DiarySheet from '@/components/history/DiarySheet.vue'
+import DiarySheet, { type DiaryTarget } from '@/components/history/DiarySheet.vue'
 import ResultCard from '@/components/result/ResultCard.vue'
 import SwipeToDelete from '@/components/ui/SwipeToDelete.vue'
 import { createHistoryRepo, type DayGroup } from '@/lib/db/historyRepo'
-import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
 import { getDb } from '@/lib/db/schema'
 import { emojiForTypes } from '@/lib/places/cuisines'
 
 const { t, locale } = useI18n()
 const repo = createHistoryRepo(getDb())
-const notesRepo = createPlaceNotesRepo(getDb())
 
 const MEAL_EMOJI: Record<Meal, string> = {
   breakfast: '🍳',
@@ -28,16 +26,14 @@ type Stats = Awaited<ReturnType<typeof repo.stats>>
 
 const groups = ref<DayGroup[]>([])
 const upcoming = ref<DrawRecord[]>([])
-const notes = ref<Map<string, PlaceNote>>(new Map())
 const stats = ref<Stats | null>(null)
 const selected = ref<Restaurant | null>(null)
 const cardOpen = ref(false)
 
 async function load() {
-  ;[groups.value, upcoming.value, notes.value, stats.value] = await Promise.all([
+  ;[groups.value, upcoming.value, stats.value] = await Promise.all([
     repo.listGroupedByDay(),
     repo.upcoming(),
-    notesRepo.allByPlaceId(),
     repo.stats(5),
   ])
 }
@@ -71,19 +67,19 @@ function openRecord(r: Restaurant) {
   cardOpen.value = true
 }
 
-// Food diary editor
-const diaryFor = ref<Restaurant | null>(null)
+// Food diary editor — per VISIT since v3
+const diaryTarget = ref<DiaryTarget | null>(null)
 const diaryOpen = ref(false)
-function openDiary(r: Restaurant) {
-  diaryFor.value = r
+function openDiary(rec: DiaryTarget) {
+  diaryTarget.value = rec
   diaryOpen.value = true
 }
 
-// Manual meal logging → straight into the diary for that place
+// Manual meal logging → straight into that visit's diary
 const addOpen = ref(false)
-async function onMealLogged(r: Restaurant) {
+async function onMealLogged(r: Restaurant, recordId: number) {
   await load()
-  openDiary(r)
+  openDiary({ id: recordId, restaurant: r })
 }
 
 // Swipe-to-delete: one open row at a time, iOS style
@@ -238,10 +234,10 @@ async function removeRecord(id: number | undefined) {
                   📔
                 </span>
                 <span
-                  v-if="notes.get(rec.restaurant.id)?.myRating"
+                  v-if="rec.diary?.rating"
                   class="rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
                 >
-                  ⭐{{ notes.get(rec.restaurant.id)!.myRating }}
+                  ⭐{{ rec.diary.rating }}
                 </span>
                 <span v-else-if="rec.restaurant.rating" class="text-xs text-stone-400">
                   ★ {{ rec.restaurant.rating.toFixed(1) }}
@@ -250,9 +246,9 @@ async function removeRecord(id: number | undefined) {
               <button
                 type="button"
                 class="shrink-0 rounded-xl px-2 py-2 text-lg active:scale-90"
-                :class="notes.has(rec.restaurant.id) ? '' : 'opacity-35 grayscale'"
+                :class="rec.diary ? '' : 'opacity-35 grayscale'"
                 :aria-label="t('diary.title')"
-                @click="openDiary(rec.restaurant)"
+                @click="openDiary(rec)"
               >
                 ✍️
               </button>
@@ -263,7 +259,7 @@ async function removeRecord(id: number | undefined) {
     </section>
 
     <ResultCard :restaurant="selected" :open="cardOpen" @close="cardOpen = false" />
-    <DiarySheet :restaurant="diaryFor" :open="diaryOpen" @close="diaryOpen = false" @saved="load" />
+    <DiarySheet :record="diaryTarget" :open="diaryOpen" @close="diaryOpen = false" @saved="load" />
     <AddMealSheet :open="addOpen" @close="addOpen = false" @saved="onMealLogged" />
   </div>
 </template>

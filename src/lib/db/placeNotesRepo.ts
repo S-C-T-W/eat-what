@@ -1,16 +1,10 @@
 import type { PlaceNote } from '@/types/models'
 import type { EatWhatDB } from './schema'
 
-/** A note with no content left is deleted rather than stored as a husk. */
+/** A note with no PLACE-level content left is deleted rather than stored as
+ *  a husk (visit-level diary lives on the records since v3). */
 function hasContent(n: Omit<PlaceNote, 'updatedAt'>): boolean {
-  return !!(
-    n.myRating ||
-    n.note?.trim() ||
-    n.spend ||
-    n.cuisines?.length ||
-    n.keywords?.length ||
-    n.closed
-  )
+  return !!(n.cuisines?.length || n.keywords?.length || n.closed)
 }
 
 export function createPlaceNotesRepo(db: EatWhatDB, now: () => number = Date.now) {

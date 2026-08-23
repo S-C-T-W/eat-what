@@ -152,6 +152,82 @@ describe('historyRepo planned draws', () => {
   })
 })
 
+describe('per-visit diary (v3)', () => {
+  it('each visit keeps its own diary; the place aggregates to an average', async () => {
+    let t = new Date('2026-08-01T12:00:00').getTime()
+    const repo = createHistoryRepo(freshDb(), () => t)
+    const id1 = await repo.addAccepted(restaurant('a'), makeDefaultConditions())
+    t = new Date('2026-08-10T12:00:00').getTime()
+    const id2 = await repo.addAccepted(restaurant('a'), makeDefaultConditions())
+    await repo.setDiary(id1, { rating: 5, note: '牛腩麵正', spend: { min: 60, max: 60 } })
+    await repo.setDiary(id2, { rating: 2, note: '水準跌咗' })
+
+    const stats = (await repo.diaryStatsByPlaceId()).get('a')!
+    expect(stats.avgRating).toBeCloseTo(3.5)
+    expect(stats.ratedVisits).toBe(2)
+    expect(stats.latestNote).toBe('水準跌咗')
+    expect(stats.latestSpend).toEqual({ min: 60, max: 60 }) // latest with spend
+
+    // clearing one visit's diary re-averages
+    await repo.setDiary(id2, null)
+    const after = (await repo.diaryStatsByPlaceId()).get('a')!
+    expect(after.avgRating).toBe(5)
+    expect(after.ratedVisits).toBe(1)
+  })
+})
+
+describe('v2 → v3 migration', () => {
+  it('moves legacy per-place diary onto the newest record, keeps place fields', async () => {
+    const name = `mig-${Date.now()}`
+    // build a v2 database shape
+    const { default: Dexie } = await import('dexie')
+    const v2 = new Dexie(name)
+    v2.version(1).stores({
+      draws: '++id, timestamp, restaurant.id, action',
+      searchCache: 'key, fetchedAt',
+      placeCache: 'id, fetchedAt',
+      blocklist: 'placeId',
+    })
+    v2.version(2).stores({ placeNotes: 'placeId' })
+    await v2.open()
+    await v2.table('draws').add({
+      timestamp: 100,
+      meal: 'lunch',
+      conditions: makeDefaultConditions(),
+      restaurant: restaurant('p1'),
+      action: 'accepted',
+    })
+    await v2.table('draws').add({
+      timestamp: 200,
+      meal: 'dinner',
+      conditions: makeDefaultConditions(),
+      restaurant: restaurant('p1'),
+      action: 'accepted',
+    })
+    await v2.table('placeNotes').put({
+      placeId: 'p1',
+      name: 'R-p1',
+      myRating: 4,
+      note: '炒飯好食',
+      spend: { min: 80, max: 80 },
+      cuisines: ['cantonese'],
+      updatedAt: 1,
+    })
+    v2.close()
+
+    // opening with the real schema runs the v3 upgrade
+    const db = new EatWhatDB(name)
+    dbs.push(db)
+    const recs = await db.draws.where('restaurant.id').equals('p1').toArray()
+    const newest = recs.sort((a, b) => b.timestamp - a.timestamp)[0]!
+    expect(newest.diary).toEqual({ rating: 4, note: '炒飯好食', spend: { min: 80, max: 80 } })
+    expect(recs.find((r) => r.timestamp === 100)!.diary).toBeUndefined()
+    const note = await db.placeNotes.get('p1')
+    expect(note?.cuisines).toEqual(['cantonese'])
+    expect(note?.myRating).toBeUndefined()
+  })
+})
+
 describe('blocklistRepo', () => {
   it('adds, lists, removes and reports ids', async () => {
     const repo = createBlocklistRepo(freshDb(), () => 1)

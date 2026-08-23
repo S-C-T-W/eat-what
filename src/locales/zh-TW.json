@@ -406,7 +406,10 @@
     "star2": "麻麻地",
     "star3": "一般",
     "star4": "好食",
-    "star5": "至愛"
+    "star5": "至愛",
+    "thisVisit": "呢次評分",
+    "avgLine": "平均 ⭐{avg}（{n} 次）— 抽籤篩選用呢個數",
+    "avgShort": "平均 {avg}★（{n} 次）"
   },
   "manual": {
     "cta": "補返一餐",

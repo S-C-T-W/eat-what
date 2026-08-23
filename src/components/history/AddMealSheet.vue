@@ -27,7 +27,7 @@ import { useDrawStore } from '@/stores/draw'
 import { useSettingsStore } from '@/stores/settings'
 
 const props = defineProps<{ open: boolean }>()
-const emit = defineEmits<{ close: []; saved: [restaurant: Restaurant] }>()
+const emit = defineEmits<{ close: []; saved: [restaurant: Restaurant, recordId: number] }>()
 
 const { t, locale } = useI18n()
 const haptics = useHaptics()
@@ -129,9 +129,12 @@ async function save() {
   if (!r || saving.value) return
   saving.value = true
   try {
-    await history.addAccepted(r, makeDefaultConditions(), { source: 'manual', at: eatenAt.value })
+    const id = await history.addAccepted(r, makeDefaultConditions(), {
+      source: 'manual',
+      at: eatenAt.value,
+    })
     haptics.tap()
-    emit('saved', r)
+    emit('saved', r, id)
     emit('close')
   } finally {
     saving.value = false

@@ -220,17 +220,19 @@ export interface Selection {
  * The rating the ★-filter judges by when the diner rated a place themselves.
  * Google's stars are a crowd average compressed into ~3.5–4.5, while a diary
  * star is a personal VERDICT on a 1–5 spread — substituting one for the
- * other made 3★ ("okay") a death sentence. Calibrated instead:
- *   1–2★ condemn (2.0/3.0 — below every filter choice) · 3★ abstains (the
- *   crowd decides) · 4–5★ endorse (at least 4.0/5.0, Google can only raise it).
+ * other made 3★ ("okay") a death sentence. Since v3 `mine` is the AVERAGE
+ * across visits, so the bands are continuous:
+ *   ≤2.5 condemns (the average IS the score — below every filter choice) ·
+ *   2.5–3.5 abstains (the crowd decides) · ≥3.5 endorses (a floor Google
+ *   can only raise). Integer verdicts behave exactly as before.
  */
 export function effectiveRating(
   google: number | undefined,
   mine: number | undefined,
 ): number | undefined {
   if (!mine) return google
-  if (mine <= 2) return mine + 1 // 1★→2.0, 2★→3.0
-  if (mine === 3) return google
+  if (mine <= 2.5) return mine
+  if (mine < 3.5) return google
   return Math.max(google ?? 0, mine)
 }
 

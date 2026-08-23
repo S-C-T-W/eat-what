@@ -2,9 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LatLng, PlaceNote, Restaurant } from '@/types/models'
+import type { LatLng, Restaurant } from '@/types/models'
 import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
+import { createHistoryRepo } from '@/lib/db/historyRepo'
 import { createPlaceNotesRepo } from '@/lib/db/placeNotesRepo'
 import { getDb } from '@/lib/db/schema'
 import AiBlurb from './AiBlurb.vue'
@@ -50,12 +51,25 @@ const origin = computed<LatLng | null>(() => (readonly.value ? null : drawStore.
 const photoFailed = ref(false)
 watch(r, () => (photoFailed.value = false))
 
-// Own diary entry for this place, if any — "you rated this 4★ last time"
-const myNote = ref<PlaceNote | null>(null)
+// Own diary aggregate for this place — "you average 4.5★ across 3 visits"
+const myDiary = ref<{ avg: number; n: number; note?: string } | null>(null)
 watch(
   r,
   async (cur) => {
-    myNote.value = cur ? ((await createPlaceNotesRepo(getDb()).get(cur.id)) ?? null) : null
+    if (!cur) {
+      myDiary.value = null
+      return
+    }
+    const stats = (await createHistoryRepo(getDb()).diaryStatsByPlaceId()).get(cur.id)
+    // legacy per-place note still counts as a seed for never-migrated places
+    const legacy = await createPlaceNotesRepo(getDb()).get(cur.id)
+    if (stats?.ratedVisits) {
+      myDiary.value = { avg: stats.avgRating, n: stats.ratedVisits, note: stats.latestNote }
+    } else if (legacy?.myRating) {
+      myDiary.value = { avg: legacy.myRating, n: 1, note: legacy.note }
+    } else {
+      myDiary.value = null
+    }
   },
   { immediate: true },
 )
@@ -140,17 +154,17 @@ async function shareAsImage() {
           <div class="mt-1 flex flex-wrap items-center gap-2">
             <RatingStars :rating="r.rating" :count="r.userRatingCount" />
             <span
-              v-if="myNote?.myRating"
+              v-if="myDiary"
               class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300"
             >
-              ⭐ {{ t('diary.mineShort', { n: myNote.myRating }) }}
+              ⭐ {{ t('diary.avgShort', { avg: myDiary.avg.toFixed(1), n: myDiary.n }) }}
             </span>
           </div>
           <p
-            v-if="myNote?.note"
+            v-if="myDiary?.note"
             class="mt-1 truncate text-xs text-stone-400 italic dark:text-stone-500"
           >
-            ✍️ {{ myNote.note }}
+            ✍️ {{ myDiary.note }}
           </p>
         </div>
 

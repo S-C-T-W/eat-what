@@ -1,6 +1,16 @@
-import type { DrawConditions, DrawRecord, Meal, Restaurant } from '@/types/models'
+import type { BudgetWindow } from '@/lib/format/price'
+import type { DrawConditions, DrawRecord, Meal, Restaurant, VisitDiary } from '@/types/models'
 import { cuisinesOfTypes } from '@/lib/places/cuisines'
 import type { BlockRow, EatWhatDB } from './schema'
+
+/** Aggregated diary view of one place across all its visits. */
+export interface PlaceDiaryStats {
+  /** Average of every visit rating (Samson's spec: sum ÷ count) */
+  avgRating: number
+  ratedVisits: number
+  latestNote?: string
+  latestSpend?: BudgetWindow
+}
 
 /** Which meal a local hour belongs to — HK rhythm: 早餐 → 午餐 → 下午茶 → 晚餐 → 宵夜. */
 export function mealForHour(hour: number): Meal {
@@ -44,10 +54,10 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
       restaurant: Restaurant,
       conditions: DrawConditions,
       opts: AddAcceptedOpts = {},
-    ): Promise<void> {
+    ): Promise<number> {
       const ts = opts.at ?? now()
       const mealTs = opts.plannedAt ?? ts
-      await db.draws.add({
+      return (await db.draws.add({
         timestamp: ts,
         meal: mealForHour(new Date(mealTs).getHours()),
         conditions: JSON.parse(JSON.stringify(conditions)) as DrawConditions,
@@ -55,7 +65,45 @@ export function createHistoryRepo(db: EatWhatDB, now: () => number = Date.now) {
         action: 'accepted',
         ...(opts.source ? { source: opts.source } : {}),
         ...(opts.plannedAt ? { plannedAt: opts.plannedAt } : {}),
-      })
+      })) as number
+    },
+
+    /** Write (or clear) one visit's diary. */
+    async setDiary(id: number, diary: VisitDiary | null): Promise<void> {
+      await db.draws
+        .where('id')
+        .equals(id)
+        .modify((rec) => {
+          if (diary && Object.keys(diary).length) rec.diary = diary
+          else delete rec.diary
+        })
+    },
+
+    /**
+     * Per-place aggregate across visits: average rating + the newest note
+     * and spend (spend is a point-in-time fact — latest wins, no averaging).
+     */
+    async diaryStatsByPlaceId(): Promise<Map<string, PlaceDiaryStats>> {
+      const records = (await db.draws.toArray()).filter((r) => r.diary)
+      records.sort((a, b) => a.timestamp - b.timestamp)
+      const out = new Map<string, PlaceDiaryStats>()
+      const sums = new Map<string, { sum: number; n: number }>()
+      for (const rec of records) {
+        const id = rec.restaurant.id
+        const stats = out.get(id) ?? { avgRating: 0, ratedVisits: 0 }
+        if (rec.diary!.rating) {
+          const s = sums.get(id) ?? { sum: 0, n: 0 }
+          s.sum += rec.diary!.rating
+          s.n += 1
+          sums.set(id, s)
+          stats.avgRating = s.sum / s.n
+          stats.ratedVisits = s.n
+        }
+        if (rec.diary!.note) stats.latestNote = rec.diary!.note
+        if (rec.diary!.spend) stats.latestSpend = rec.diary!.spend
+        out.set(id, stats)
+      }
+      return out
     },
 
     async remove(id: number): Promise<void> {

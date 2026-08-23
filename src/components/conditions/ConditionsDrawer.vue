@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BottomSheet from '@/components/ui/BottomSheet.vue'
@@ -10,10 +11,31 @@ import BudgetSelect from './BudgetSelect.vue'
 import RadiusSelect from './RadiusSelect.vue'
 import MiscToggles from './MiscToggles.vue'
 import OriginPicker from './OriginPicker.vue'
+import { getCurrentLocation } from '@/composables/useOrigin'
 import { useDrawStore } from '@/stores/draw'
+import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
 const drawStore = useDrawStore()
+const settings = useSettingsStore()
+
+// Opening the filter IS the moment to ask for location (user gesture, and
+// the map preview wants to centre on where they actually are). Users who
+// never open the drawer keep the old behaviour: permission is asked at
+// draw time. Demo mode stays on the demo origin for consistency.
+let lastFixAt = 0
+watch(
+  () => drawStore.drawerOpen,
+  async (open) => {
+    if (!open || !settings.googleApiKey) return
+    if (Date.now() - lastFixAt < 60_000) return
+    const fix = await getCurrentLocation()
+    if (fix.ok) {
+      drawStore.liveFix = fix.location
+      lastFixAt = Date.now()
+    }
+  },
+)
 </script>
 
 <template>

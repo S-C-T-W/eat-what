@@ -31,6 +31,9 @@ export const useDrawStore = defineStore('draw', () => {
   const winnerIndex = ref(-1)
   const relaxations = ref<RelaxationSuggestion[]>([])
   const lastOrigin = ref<LatLng | null>(null)
+  /** Fresh GPS fix grabbed when the filter drawer opens — centres the map
+   *  preview on where the user actually is (no draw needed first) */
+  const liveFix = ref<LatLng | null>(null)
   /** Fingerprint of the conditions the current pool was fetched with */
   const poolFingerprint = ref<string | null>(null)
   const region = ref<Region>('HK')
@@ -117,6 +120,7 @@ export const useDrawStore = defineStore('draw', () => {
     winnerIndex,
     relaxations,
     lastOrigin,
+    liveFix,
     poolFingerprint,
     region,
     errorKey,

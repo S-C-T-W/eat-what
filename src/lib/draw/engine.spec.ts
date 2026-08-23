@@ -244,16 +244,21 @@ describe('filterPool with place notes (diary corrections)', () => {
     expect(filterPool(strong, cond({ minRating: null }), notesCtx('p1', { myRating: 1 }))).toHaveLength(1)
   })
 
-  it('effectiveRating maps the verdict table', () => {
+  it('effectiveRating maps the verdict bands — continuous since averages exist', () => {
     expect(effectiveRating(3.2, 5)).toBe(5)
     expect(effectiveRating(3.2, 4)).toBe(4)
     expect(effectiveRating(4.6, 4)).toBe(4.6) // Google can only raise an endorsement
     expect(effectiveRating(4.2, 3)).toBe(4.2) // abstain
-    expect(effectiveRating(4.8, 2)).toBe(3)
-    expect(effectiveRating(4.8, 1)).toBe(2)
+    expect(effectiveRating(4.8, 2)).toBe(2) // condemn: the average IS the score
+    expect(effectiveRating(4.8, 1)).toBe(1)
     expect(effectiveRating(undefined, 4)).toBe(4)
     expect(effectiveRating(undefined, 3)).toBeUndefined()
     expect(effectiveRating(4.1, undefined)).toBe(4.1)
+    // averages between visits
+    expect(effectiveRating(4.8, 2.5)).toBe(2.5) // (2+3)/2 still condemns
+    expect(effectiveRating(4.2, 3.4)).toBe(4.2) // near-3 average abstains
+    expect(effectiveRating(3.0, 3.5)).toBe(3.5) // (3+4)/2 endorses as a floor
+    expect(effectiveRating(4.6, 4.5)).toBe(4.6)
   })
 
   it('diary spend beats Google price data in the budget filter', () => {
