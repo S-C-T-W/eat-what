@@ -17,7 +17,8 @@
 export interface KeywordTag {
   id: string
   emoji: string
-  q: { 'zh-TW': string; en: string }
+  /** Search queries per language family; `ja` only where the tag makes sense in Japan */
+  q: { zh: string; en: string; ja?: string }
   /** Table A types that mean this tag — lets EXCLUSION catch places by type */
   types?: string[]
 }
@@ -36,75 +37,156 @@ export const KEYWORD_GROUPS: KeywordGroup[] = [
     id: 'hk',
     emoji: '🇭🇰',
     tags: [
-      { id: 'chaChaanTeng', emoji: '🍞', q: { 'zh-TW': '茶餐廳', en: 'cha chaan teng' } },
-      { id: 'daiPaiDong', emoji: '🍳', q: { 'zh-TW': '大牌檔', en: 'dai pai dong' } },
-      { id: 'twoDishRice', emoji: '🍱', q: { 'zh-TW': '兩餸飯', en: 'two dish rice' } },
-      { id: 'roastMeat', emoji: '🍗', q: { 'zh-TW': '燒味 燒臘', en: 'hong kong roast meat siu mei' } },
-      { id: 'congee', emoji: '🥣', q: { 'zh-TW': '粥品 粥店', en: 'congee' } },
-      { id: 'dimSum', emoji: '🥟', q: { 'zh-TW': '點心 飲茶', en: 'dim sum' } },
-      { id: 'cartNoodle', emoji: '🛒', q: { 'zh-TW': '車仔麵', en: 'cart noodles' } },
-      { id: 'snackShop', emoji: '🍡', q: { 'zh-TW': '小食店 街頭小食', en: 'hong kong street snacks' } },
+      { id: 'chaChaanTeng', emoji: '🍞', q: { zh: '茶餐廳', en: 'cha chaan teng' } },
+      { id: 'daiPaiDong', emoji: '🍳', q: { zh: '大牌檔', en: 'dai pai dong' } },
+      { id: 'twoDishRice', emoji: '🍱', q: { zh: '兩餸飯', en: 'two dish rice' } },
+      { id: 'roastMeat', emoji: '🍗', q: { zh: '燒味 燒臘', en: 'hong kong roast meat siu mei' } },
+      { id: 'congee', emoji: '🥣', q: { zh: '粥品 粥店', en: 'congee', ja: 'お粥' } },
+      { id: 'dimSum', emoji: '🥟', q: { zh: '點心 飲茶', en: 'dim sum', ja: '点心 飲茶' } },
+      { id: 'cartNoodle', emoji: '🛒', q: { zh: '車仔麵', en: 'cart noodles' } },
+      { id: 'snackShop', emoji: '🍡', q: { zh: '小食店 街頭小食', en: 'hong kong street snacks' } },
     ],
   },
   {
     id: 'regional',
     emoji: '🀄',
     tags: [
-      { id: 'chiuChow', emoji: '🦆', q: { 'zh-TW': '潮州菜', en: 'chiu chow restaurant' } },
-      { id: 'shunTak', emoji: '🐟', q: { 'zh-TW': '順德菜', en: 'shunde restaurant' } },
-      { id: 'hakka', emoji: '🍘', q: { 'zh-TW': '客家菜', en: 'hakka restaurant' } },
-      { id: 'shanghainese', emoji: '🥠', q: { 'zh-TW': '上海菜', en: 'shanghainese restaurant' } },
-      { id: 'sichuan', emoji: '🌶️', q: { 'zh-TW': '川菜 四川菜', en: 'sichuan restaurant' } },
-      { id: 'hunan', emoji: '🥵', q: { 'zh-TW': '湖南菜 湘菜', en: 'hunan restaurant' } },
-      { id: 'beijing', emoji: '🏮', q: { 'zh-TW': '北京菜 京菜', en: 'peking restaurant' } },
-      { id: 'northeastern', emoji: '❄️', q: { 'zh-TW': '東北菜', en: 'dongbei northeastern chinese restaurant' } },
-      { id: 'xinjiang', emoji: '🍢', q: { 'zh-TW': '新疆菜', en: 'xinjiang restaurant' } },
+      {
+        id: 'chiuChow',
+        emoji: '🦆',
+        q: { zh: '潮州菜', en: 'chiu chow restaurant', ja: '潮州料理' },
+      },
+      { id: 'shunTak', emoji: '🐟', q: { zh: '順德菜', en: 'shunde restaurant' } },
+      { id: 'hakka', emoji: '🍘', q: { zh: '客家菜', en: 'hakka restaurant', ja: '客家料理' } },
+      {
+        id: 'shanghainese',
+        emoji: '🥠',
+        q: { zh: '上海菜', en: 'shanghainese restaurant', ja: '上海料理' },
+      },
+      {
+        id: 'sichuan',
+        emoji: '🌶️',
+        q: { zh: '川菜 四川菜', en: 'sichuan restaurant', ja: '四川料理' },
+      },
+      {
+        id: 'hunan',
+        emoji: '🥵',
+        q: { zh: '湖南菜 湘菜', en: 'hunan restaurant', ja: '湖南料理' },
+      },
+      {
+        id: 'beijing',
+        emoji: '🏮',
+        q: { zh: '北京菜 京菜', en: 'peking restaurant', ja: '北京料理' },
+      },
+      {
+        id: 'northeastern',
+        emoji: '❄️',
+        q: { zh: '東北菜', en: 'dongbei northeastern chinese restaurant', ja: '中国東北料理' },
+      },
+      {
+        id: 'xinjiang',
+        emoji: '🍢',
+        q: { zh: '新疆菜', en: 'xinjiang restaurant', ja: '新疆料理' },
+      },
     ],
   },
   {
     id: 'jpkr',
     emoji: '🎌',
     tags: [
-      { id: 'omakase', emoji: '🍣', q: { 'zh-TW': '廚師發辦 omakase', en: 'omakase' } },
-      { id: 'ramen', emoji: '🍜', q: { 'zh-TW': '拉麵', en: 'ramen' }, types: ['ramen_restaurant'] },
-      { id: 'izakaya', emoji: '🏮', q: { 'zh-TW': '居酒屋', en: 'izakaya' } },
-      { id: 'yakiniku', emoji: '🥩', q: { 'zh-TW': '日式燒肉', en: 'yakiniku' } },
-      { id: 'teppanyaki', emoji: '🔥', q: { 'zh-TW': '鐵板燒', en: 'teppanyaki' } },
-      { id: 'koreanFriedChicken', emoji: '🍗', q: { 'zh-TW': '韓式炸雞', en: 'korean fried chicken' } },
+      { id: 'omakase', emoji: '🍣', q: { zh: '廚師發辦 omakase', en: 'omakase', ja: 'おまかせ' } },
+      {
+        id: 'ramen',
+        emoji: '🍜',
+        q: { zh: '拉麵', en: 'ramen', ja: 'ラーメン' },
+        types: ['ramen_restaurant'],
+      },
+      { id: 'izakaya', emoji: '🏮', q: { zh: '居酒屋', en: 'izakaya', ja: '居酒屋' } },
+      { id: 'yakiniku', emoji: '🥩', q: { zh: '日式燒肉', en: 'yakiniku', ja: '焼肉' } },
+      { id: 'teppanyaki', emoji: '🔥', q: { zh: '鐵板燒', en: 'teppanyaki', ja: '鉄板焼き' } },
+      {
+        id: 'koreanFriedChicken',
+        emoji: '🍗',
+        q: { zh: '韓式炸雞', en: 'korean fried chicken', ja: '韓国チキン' },
+      },
     ],
   },
   {
     id: 'hotpotGrill',
     emoji: '🫕',
     tags: [
-      { id: 'hotpot', emoji: '🫕', q: { 'zh-TW': '火鍋 打邊爐', en: 'hot pot' } },
-      { id: 'chickenPot', emoji: '🐔', q: { 'zh-TW': '雞煲', en: 'chicken hot pot 雞煲' } },
-      { id: 'skewers', emoji: '🍢', q: { 'zh-TW': '串燒', en: 'skewers yakitori' } },
-      { id: 'allYouCanEat', emoji: '🍽️', q: { 'zh-TW': '放題 任食', en: 'all you can eat' } },
-      { id: 'buffet', emoji: '🥂', q: { 'zh-TW': '自助餐', en: 'buffet' } },
+      {
+        id: 'hotpot',
+        emoji: '🫕',
+        q: { zh: '火鍋 打邊爐', en: 'hot pot', ja: '鍋料理 しゃぶしゃぶ 火鍋' },
+      },
+      { id: 'chickenPot', emoji: '🐔', q: { zh: '雞煲', en: 'chicken hot pot 雞煲' } },
+      {
+        id: 'skewers',
+        emoji: '🍢',
+        q: { zh: '串燒', en: 'skewers yakitori', ja: '焼き鳥 串焼き' },
+      },
+      {
+        id: 'allYouCanEat',
+        emoji: '🍽️',
+        q: { zh: '放題 任食', en: 'all you can eat', ja: '食べ放題' },
+      },
+      { id: 'buffet', emoji: '🥂', q: { zh: '自助餐', en: 'buffet', ja: 'ビュッフェ バイキング' } },
     ],
   },
   {
     id: 'noodleWorks',
     emoji: '🍜',
     tags: [
-      { id: 'riceNoodles', emoji: '🍜', q: { 'zh-TW': '米線', en: 'mixian rice noodles' } },
-      { id: 'wonton', emoji: '🥟', q: { 'zh-TW': '雲吞麵', en: 'wonton noodles' } },
+      { id: 'riceNoodles', emoji: '🍜', q: { zh: '米線', en: 'mixian rice noodles' } },
+      { id: 'wonton', emoji: '🥟', q: { zh: '雲吞麵', en: 'wonton noodles' } },
     ],
   },
   {
     id: 'special',
     emoji: '✨',
     tags: [
-      { id: 'privateKitchen', emoji: '🔒', q: { 'zh-TW': '私房菜', en: 'private kitchen' } },
-      { id: 'fineDining', emoji: '🍾', q: { 'zh-TW': 'fine dining 高級餐廳', en: 'fine dining' } },
-      { id: 'hotelDining', emoji: '🏨', q: { 'zh-TW': '酒店餐廳', en: 'hotel restaurant' } },
-      { id: 'curry', emoji: '🍛', q: { 'zh-TW': '咖喱', en: 'curry restaurant' } },
-      { id: 'allDayBreakfast', emoji: '🍳', q: { 'zh-TW': '全日早餐 all day breakfast', en: 'all day breakfast' } },
-      { id: 'dessertSoup', emoji: '🍧', q: { 'zh-TW': '糖水舖 中式甜品', en: 'chinese dessert soup tong sui' } },
-      { id: 'halal', emoji: '☪️', q: { 'zh-TW': '清真餐廳 halal', en: 'halal restaurant' } },
-      { id: 'themed', emoji: '🎠', q: { 'zh-TW': '主題餐廳', en: 'themed restaurant' } },
-      { id: 'kidFriendly', emoji: '👶', q: { 'zh-TW': '親子餐廳', en: 'family friendly restaurant kids' } },
+      { id: 'privateKitchen', emoji: '🔒', q: { zh: '私房菜', en: 'private kitchen' } },
+      {
+        id: 'fineDining',
+        emoji: '🍾',
+        q: { zh: 'fine dining 高級餐廳', en: 'fine dining', ja: '高級レストラン' },
+      },
+      {
+        id: 'hotelDining',
+        emoji: '🏨',
+        q: { zh: '酒店餐廳', en: 'hotel restaurant', ja: 'ホテル レストラン' },
+      },
+      { id: 'curry', emoji: '🍛', q: { zh: '咖喱', en: 'curry restaurant', ja: 'カレー' } },
+      {
+        id: 'allDayBreakfast',
+        emoji: '🍳',
+        q: { zh: '全日早餐 all day breakfast', en: 'all day breakfast' },
+      },
+      {
+        id: 'dessertSoup',
+        emoji: '🍧',
+        q: { zh: '糖水舖 中式甜品', en: 'chinese dessert soup tong sui' },
+      },
+      {
+        id: 'halal',
+        emoji: '☪️',
+        q: { zh: '清真餐廳 halal', en: 'halal restaurant', ja: 'ハラール' },
+      },
+      {
+        id: 'themed',
+        emoji: '🎠',
+        q: { zh: '主題餐廳', en: 'themed restaurant', ja: 'テーマレストラン' },
+      },
+      {
+        id: 'kidFriendly',
+        emoji: '👶',
+        q: {
+          zh: '親子餐廳',
+          en: 'family friendly restaurant kids',
+          ja: '子連れ ファミリーレストラン',
+        },
+      },
     ],
   },
 ]
@@ -115,6 +197,13 @@ const tagById = new Map<string, KeywordTag>(
 
 export function keywordTagById(id: string): KeywordTag | undefined {
   return tagById.get(id)
+}
+
+/** The Text Search query for a tag in the UI's language family. */
+export function tagQuery(tag: KeywordTag, locale: string): string {
+  if (locale.startsWith('zh')) return tag.q.zh
+  if (locale === 'ja') return tag.q.ja ?? tag.q.en
+  return tag.q.en
 }
 
 const stripPattern = /[\s·・,，。()（）【】\-–—'']/g
@@ -142,7 +231,11 @@ export function matchesKeywordTag(
   if (diaryKeywords?.includes(tag.id)) return true
   if (tag.types?.some((t) => place.types.includes(t))) return true
   const name = normalized(place.name)
-  const terms = [...tag.q['zh-TW'].split(' ').map(normalized), normalized(tag.q.en)]
+  const terms = [
+    ...tag.q.zh.split(' ').map(normalized),
+    normalized(tag.q.en),
+    ...(tag.q.ja?.split(' ').map(normalized) ?? []),
+  ]
   return terms
     .filter((term) => (hasCjk(term) ? term.length >= 2 : term.length >= 4))
     .some((term) => name.includes(term))

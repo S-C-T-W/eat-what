@@ -8,6 +8,7 @@
  * Privacy unchanged: candidate names/emoji/links only, host token never
  * exposed on reads, room self-destructs after 1 hour via alarm.
  */
+import { SUPPORTED_LOCALES } from './copy'
 
 /** Enough of a Restaurant for a participant to save the winner to history */
 export interface SlimRestaurant {
@@ -153,7 +154,10 @@ export class RoomDO {
         vetoes: {},
         result: null,
         hostToken: crypto.randomUUID(),
-        locale: body?.locale === 'zh-TW' ? 'zh-TW' : 'en',
+        locale:
+          typeof body?.locale === 'string' && SUPPORTED_LOCALES.has(body.locale)
+            ? body.locale
+            : 'en',
         createdAt: new Date().toISOString(),
         ...(plannedAt !== undefined ? { plannedAt } : {}),
       }

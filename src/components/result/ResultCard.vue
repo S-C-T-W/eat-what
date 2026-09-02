@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AppLocale } from '@/lib/i18n/locales'
+
 import type { LatLng, Restaurant } from '@/types/models'
 import ModalShell from '@/components/ui/ModalShell.vue'
 import RatingStars from '@/components/ui/RatingStars.vue'
@@ -82,9 +84,7 @@ const photoSrc = computed(() => {
   return getProvider(settings.googleApiKey).photoUrl(first, 800)
 })
 
-const price = computed(() =>
-  r.value ? formatPrice(r.value, locale.value, region.value) : null,
-)
+const price = computed(() => (r.value ? formatPrice(r.value, locale.value, region.value) : null))
 
 const distanceText = computed(() => {
   if (!r.value || !origin.value) return null
@@ -98,7 +98,7 @@ const heroColor = computed(() => wheelColor(drawStore.winnerIndex >= 0 ? drawSto
 
 const mapsUrl = computed(() => (r.value ? buildGoogleMapsUrl(r.value) : null))
 const openRiceUrl = computed(() =>
-  r.value ? buildOpenRiceUrl(r.value.name, region.value, locale.value as 'en' | 'zh-TW') : null,
+  r.value ? buildOpenRiceUrl(r.value.name, region.value, locale.value as AppLocale) : null,
 )
 const tabelogUrl = computed(() => (r.value ? buildTabelogUrl(r.value.name, region.value) : null))
 
@@ -198,7 +198,8 @@ async function shareAsImage() {
             </span>
             <span v-else class="text-red-500 dark:text-red-400">🔴 {{ t('result.closed') }}</span>
             <span v-if="r.todayHours" class="text-stone-400 dark:text-stone-500">
-              · {{ r.todayHours }}</span>
+              · {{ r.todayHours }}</span
+            >
           </p>
           <p v-if="r.address" class="text-stone-500 dark:text-stone-400">🏠 {{ r.address }}</p>
         </div>

@@ -1,32 +1,42 @@
 import { describe, expect, it } from 'vitest'
 
 import en from './en.json'
+import ja from './ja.json'
+import zhHK from './zh-HK.json'
 import zhTW from './zh-TW.json'
 
-function flatKeys(obj: Record<string, unknown>, prefix = ''): string[] {
-  return Object.entries(obj).flatMap(([key, value]) =>
-    value !== null && typeof value === 'object'
-      ? flatKeys(value as Record<string, unknown>, `${prefix}${key}.`)
-      : [`${prefix}${key}`],
-  )
+const LOCALES: Record<string, Record<string, unknown>> = { en, 'zh-HK': zhHK, 'zh-TW': zhTW, ja }
+
+function flatten(obj: Record<string, unknown>, prefix = ''): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== null && typeof value === 'object') {
+      for (const [k, v] of flatten(value as Record<string, unknown>, `${prefix}${key}.`))
+        out.set(k, v)
+    } else out.set(`${prefix}${key}`, String(value))
+  }
+  return out
 }
 
-describe('locale resources', () => {
-  it('en and zh-TW expose identical key sets', () => {
-    expect(flatKeys(zhTW as Record<string, unknown>).sort()).toEqual(
-      flatKeys(en as Record<string, unknown>).sort(),
-    )
-  })
+const placeholders = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()
 
-  it('no message is left empty', () => {
-    for (const locale of [en, zhTW]) {
-      const walk = (obj: Record<string, unknown>): void => {
-        for (const value of Object.values(obj)) {
-          if (value !== null && typeof value === 'object') walk(value as Record<string, unknown>)
-          else expect(String(value).trim()).not.toHaveLength(0)
-        }
-      }
-      walk(locale as Record<string, unknown>)
-    }
-  })
+describe('locale resources', () => {
+  const base = flatten(en)
+
+  for (const [name, messages] of Object.entries(LOCALES)) {
+    const flat = flatten(messages)
+
+    it(`${name} exposes exactly the English key set`, () => {
+      expect([...flat.keys()].sort()).toEqual([...base.keys()].sort())
+    })
+
+    it(`${name} leaves no message empty`, () => {
+      for (const [key, value] of flat) expect(value.trim(), key).not.toHaveLength(0)
+    })
+
+    it(`${name} keeps every {placeholder} the English source uses`, () => {
+      for (const [key, value] of flat)
+        expect(placeholders(value), key).toEqual(placeholders(base.get(key)!))
+    })
+  }
 })

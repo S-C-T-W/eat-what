@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { speechLang } from '@/lib/i18n/locales'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -28,7 +29,8 @@ type SpeechRecognitionCtor = new () => {
   lang: string
   interimResults: boolean
   maxAlternatives: number
-  onresult: ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null
+  onresult:
+    ((e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null
   onerror: (() => void) | null
   onend: (() => void) | null
   start(): void
@@ -42,7 +44,7 @@ const micSupported = !!SR
 function listen() {
   if (!SR || state.value === 'listening') return
   const rec = new SR()
-  rec.lang = settings.locale === 'zh-TW' ? 'zh-HK' : 'en-US'
+  rec.lang = speechLang(settings.locale)
   rec.interimResults = false
   rec.maxAlternatives = 1
   state.value = 'listening'
@@ -119,7 +121,10 @@ async function submit() {
     <p v-if="state === 'listening'" class="mt-1.5 text-xs text-violet-500">
       🎙️ {{ t('conditions.voice.listening') }}
     </p>
-    <p v-else-if="state === 'applied'" class="mt-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+    <p
+      v-else-if="state === 'applied'"
+      class="mt-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+    >
       ✅ {{ t('conditions.voice.applied', { n: appliedCount }) }}
     </p>
     <p v-else-if="state === 'failed'" class="mt-1.5 text-xs text-amber-600">

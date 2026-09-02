@@ -9,7 +9,7 @@ export interface StoredSubscription {
   }
   /** IANA timezone from the subscriber's device */
   tz: string
-  /** 'en' | 'zh-TW' — which copy to send */
+  /** 'en' | 'zh-HK' | 'zh-TW' | 'ja' — which copy to send (see copy.ts) */
   locale: string
   prefs: MealPrefs
   /** Local date (YYYY-MM-DD) of the last send, per meal — dedup across cron runs */

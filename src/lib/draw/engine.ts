@@ -1,3 +1,4 @@
+import type { AppLocale } from '@/lib/i18n/locales'
 import type {
   DrawConditions,
   DrawStyle,
@@ -12,6 +13,7 @@ import {
   matchesKeywordTag,
   MAX_KEYWORD_TAGS,
   type KeywordTag,
+  tagQuery,
 } from '@/lib/places/keywords'
 import {
   CHAIN_PATTERNS,
@@ -296,7 +298,7 @@ export function selectCandidates(
 
 export interface DrawEngineDeps {
   provider: PlacesProvider
-  lang: 'en' | 'zh-TW'
+  lang: AppLocale
   region: Region
   blockedIds?: ReadonlySet<string>
   recentIds?: ReadonlySet<string>
@@ -390,7 +392,7 @@ async function fetchKeyword(
   if (cached) return cached
   const results = await deps.provider.searchText(
     {
-      query: tag.q[deps.lang],
+      query: tagQuery(tag, deps.lang),
       origin,
       radiusMeters: queryRadiusFor(cond.radiusMeters),
       languageCode: deps.lang,

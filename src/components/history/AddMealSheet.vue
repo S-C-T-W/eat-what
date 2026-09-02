@@ -11,6 +11,8 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AppLocale } from '@/lib/i18n/locales'
+
 import type { LatLng, Restaurant } from '@/types/models'
 import BottomSheet from '@/components/ui/BottomSheet.vue'
 import { getProvider } from '@/lib/places'
@@ -99,7 +101,7 @@ async function search() {
       query: q,
       origin: origin.value,
       radiusMeters: 5000,
-      languageCode: locale.value as 'en' | 'zh-TW',
+      languageCode: locale.value as AppLocale,
       maxResults: 8,
     })
     searched.value = true

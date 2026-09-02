@@ -1,4 +1,5 @@
 import type { LatLng, PlaceSuggestion, Restaurant } from '@/types/models'
+import type { AppLocale } from '@/lib/i18n/locales'
 
 export interface SearchNearbyParams {
   origin: LatLng
@@ -6,7 +7,7 @@ export interface SearchNearbyParams {
   /** Places Table A type values; required in practice — pass ALL_FOOD_TYPES for "any" */
   includedTypes: string[]
   excludedTypes?: string[]
-  languageCode: 'en' | 'zh-TW'
+  languageCode: AppLocale
   regionCode?: string
   maxResults?: number
 }
@@ -17,7 +18,7 @@ export interface SearchTextParams {
   /** Bias circle only — results can fall outside; the engine re-checks radius */
   origin: LatLng
   radiusMeters: number
-  languageCode: 'en' | 'zh-TW'
+  languageCode: AppLocale
   regionCode?: string
   maxResults?: number
 }

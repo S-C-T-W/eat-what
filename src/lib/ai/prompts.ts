@@ -1,8 +1,5 @@
 import type { Restaurant } from '@/types/models'
-
-function langName(locale: string): string {
-  return locale === 'zh-TW' ? 'Traditional Chinese (繁體中文)' : 'English'
-}
+import { languageName as langName } from '@/lib/i18n/locales'
 
 export function candidateDigest(candidates: Restaurant[]): string {
   return JSON.stringify(

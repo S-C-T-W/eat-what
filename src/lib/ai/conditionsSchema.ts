@@ -4,6 +4,7 @@
  * unknown ids dropped, numbers snapped/clamped — so a hallucinated field can
  * never corrupt the store.
  */
+import { languageName } from '@/lib/i18n/locales'
 import type { DrawConditions, DrawStyle } from '@/types/models'
 import type { BudgetWindow } from '@/lib/format/price'
 import { CUISINES, type CuisineId } from '@/lib/places/cuisines'
@@ -42,9 +43,9 @@ export function conditionsMessages(
   now: Date = new Date(),
 ): ChatMessage[] {
   const cuisineList = CUISINES.map((c) => c.id).join(', ')
-  const keywordList = KEYWORD_GROUPS.flatMap((g) =>
-    g.tags.map((t) => `${t.id}(${t.q['zh-TW']})`),
-  ).join(', ')
+  const keywordList = KEYWORD_GROUPS.flatMap((g) => g.tags.map((t) => `${t.id}(${t.q.zh})`)).join(
+    ', ',
+  )
   const todayIso = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
   const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()]
   const system = `You convert a diner's natural-language request into restaurant draw filters.
@@ -67,7 +68,7 @@ Fields:
 - "partySize": integer 1-12
 - "drawStyle": "uniform" | "favor" (their usual places) | "explore" (somewhere new)
 
-The user speaks ${locale === 'zh-TW' ? 'Cantonese/Chinese' : 'English'}. Map dishes to the closest cuisine or keyword (e.g. 想食辣 → cuisinesInclude sichuan + thai; 打邊爐 → keywords hotpot).`
+The user speaks ${languageName(locale)}. Map dishes to the closest cuisine or keyword (e.g. 想食辣 / 想吃辣 / 辛いもの → cuisinesInclude sichuan + thai; 打邊爐 / 火鍋 / 鍋 → keywords hotpot).`
   return [
     { role: 'system', content: system },
     { role: 'user', content: utterance.slice(0, 300) },
@@ -100,7 +101,9 @@ export function sanitizeAiConditions(raw: unknown): AiConditionPatch | null {
 
   const tagArray = (v: unknown): string[] | undefined => {
     if (!Array.isArray(v)) return undefined
-    const tags = [...new Set(v.filter((x): x is string => typeof x === 'string' && !!keywordTagById(x)))]
+    const tags = [
+      ...new Set(v.filter((x): x is string => typeof x === 'string' && !!keywordTagById(x))),
+    ]
     return tags.length || v.length === 0 ? tags : undefined
   }
   const keywords = tagArray(r.keywords)

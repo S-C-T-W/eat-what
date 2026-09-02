@@ -15,8 +15,10 @@ const settings = useSettingsStore()
 
 const themes: ThemePref[] = ['light', 'dark', 'system']
 const languages: { value: AppLocale; label: string }[] = [
+  { value: 'zh-HK', label: '廣東話（香港）' },
+  { value: 'zh-TW', label: '繁體中文（台灣）' },
+  { value: 'ja', label: '日本語' },
   { value: 'en', label: 'English' },
-  { value: 'zh-TW', label: '繁體中文' },
 ]
 
 const keyDraft = ref(settings.googleApiKey)
@@ -49,7 +51,9 @@ function clearKey() {
     <h1 class="mb-6 text-2xl font-bold">{{ t('settings.title') }}</h1>
 
     <section class="mb-8">
-      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+      <h2
+        class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400"
+      >
         {{ t('settings.appearance') }}
       </h2>
       <div class="flex gap-2">
@@ -70,14 +74,16 @@ function clearKey() {
     </section>
 
     <section class="mb-8">
-      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+      <h2
+        class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400"
+      >
         {{ t('settings.language') }}
       </h2>
-      <div class="flex gap-2">
+      <div class="grid grid-cols-2 gap-2">
         <button
           v-for="lang in languages"
           :key="lang.value"
-          class="flex-1 rounded-xl border px-3 py-2 text-sm transition-colors"
+          class="rounded-xl border px-3 py-2 text-sm transition-colors"
           :class="
             settings.locale === lang.value
               ? 'border-orange-500 bg-orange-500/10 font-semibold text-orange-600 dark:text-orange-400'
@@ -91,7 +97,9 @@ function clearKey() {
     </section>
 
     <section class="mb-8">
-      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+      <h2
+        class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400"
+      >
         {{ t('settings.google.title') }}
       </h2>
       <p class="mb-2 text-xs text-stone-500 dark:text-stone-400">
@@ -123,7 +131,10 @@ function clearKey() {
           ✕
         </button>
       </div>
-      <p v-if="keyStatus === 'valid'" class="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+      <p
+        v-if="keyStatus === 'valid'"
+        class="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+      >
         ✅ {{ t('setup.keyValid') }}
       </p>
       <p v-else-if="keyStatus === 'invalid'" class="mt-2 text-xs font-semibold text-red-500">
@@ -144,7 +155,9 @@ function clearKey() {
     <NotificationSettings />
 
     <section class="mb-8">
-      <h2 class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400">
+      <h2
+        class="mb-2 text-sm font-semibold tracking-wide text-stone-500 uppercase dark:text-stone-400"
+      >
         ⛓️ {{ t('settings.chains.title') }}
       </h2>
       <p class="mb-2 text-xs text-stone-500 dark:text-stone-400">

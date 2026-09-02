@@ -8,7 +8,7 @@
  */
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 
-import { mealCopy, testCopy, type NotificationCopy } from './copy'
+import { mealCopy, testCopy, type NotificationCopy, SUPPORTED_LOCALES } from './copy'
 import { isRoomId, newRoomId } from './rooms'
 import { dueMeals, localParts, parseTime, type MealPref, type MealPrefs } from './schedule'
 import type { CronHealth, Env, StoredSubscription } from './types'
@@ -160,7 +160,7 @@ async function handleSubscribe(request: Request, env: Env): Promise<Response> {
   const record: StoredSubscription = {
     subscription,
     tz,
-    locale: locale === 'zh-TW' ? 'zh-TW' : 'en',
+    locale: typeof locale === 'string' && SUPPORTED_LOCALES.has(locale) ? locale : 'en',
     prefs,
     // A prefs update must not re-fire a meal already sent today
     lastSent: existing?.lastSent,
@@ -208,7 +208,14 @@ async function handleHealth(env: Env): Promise<Response> {
 }
 
 async function deliverDue(env: Env, now: Date): Promise<void> {
-  const health: CronHealth = { at: now.toISOString(), scanned: 0, due: 0, sent: 0, errors: 0, pruned: 0 }
+  const health: CronHealth = {
+    at: now.toISOString(),
+    scanned: 0,
+    due: 0,
+    sent: 0,
+    errors: 0,
+    pruned: 0,
+  }
   let cursor: string | undefined
   do {
     const page = await env.SUBS.list({ cursor })
@@ -266,7 +273,8 @@ async function deliverDue(env: Env, now: Date): Promise<void> {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url)
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_HEADERS })
+    if (request.method === 'OPTIONS')
+      return new Response(null, { status: 204, headers: CORS_HEADERS })
     if (url.pathname === '/' && request.method === 'GET') {
       return json({ service: 'eat-what-push', ok: true })
     }
