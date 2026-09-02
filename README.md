@@ -33,6 +33,9 @@ Everything supports "surprise me":
 - Minimum rating, "don't repeat the last N days", party size — and any combination saved as a named **preset** (「公司午餐」, 「拍拖晚餐」…) for one-tap reuse
 - Zero matches? One-tap **relaxation chips** show exactly which constraint to drop and how many places come back
 
+### 🗺️ Where to search
+The circle around you is only the default. **Shift** it (300 m east, from your location or from any searched base), narrow it to a **90° / 180° wedge** in one direction, union up to **5 spots**, or search a **corridor** along an A→B line (its own width slider, up to 8 km apart). A coverage planner turns any shape into ≤ 3 Google calls, everything is re-checked client-side against the exact geometry, and a live **map preview** (MapLibre + OpenFreeMap vector tiles, keyless) projects the area you are about to search — with a blue "you are here" dot grabbed when the filter opens. Advanced modes hide behind a ⚙️ so the everyday filter stays short.
+
 ### 🗣️ Say it instead
 With an (optional, BYO) OpenAI-compatible AI configured: hold the mic and say 「下星期一晚七點，唔好辣，每人一百蚊以內」 — speech becomes structured filters through a strict JSON contract, and every value is re-validated against closed vocabularies so a hallucination can never corrupt your settings. Type a mood instead and the **AI concierge** picks the winner from the wheel with a one-line reason (labelled 🤖, so you always know when it wasn't chance). A keyless weather chip (Open-Meteo) suggests rainy-day/hot-day presets.
 
@@ -63,7 +66,7 @@ No key yet? Everything above runs on built-in sample data, clearly bannered.
 
 ## Built like an app
 
-Installable PWA (offline shell, auto-updating service worker), iOS-style liquid-glass tab bar, no input-zoom or text-selection jank, swipe gestures, full dark mode, and complete English + 繁體中文 localization (parity enforced by a test).
+Installable PWA (offline shell, auto-updating service worker), iOS-style liquid-glass tab bar, no input-zoom or text-selection jank, swipe gestures, full dark mode, and **four UI languages** — English, 廣東話 (zh-HK), 台灣繁體中文 (zh-TW), 日本語 (ja). Chinese is matched by *region*, not script, so Hong Kong users get Cantonese and Taiwan users get written Mandarin, each with its own app name (食乜好 · 呷什麼 · なに食べる？); key sets and placeholders are kept in parity by a test.
 
 ## The $0 architecture
 
@@ -158,6 +161,7 @@ Built July 2026, shipped in public from day one:
 - **Phase 2 · notifications** — Worker cron + KV + VAPID push, per-meal schedules, timezone-aware; hardened after a real-world hunt that ended at Apple's `BadWebPushTopic` (Topic headers must be *decodable* base64url — 5-char topics silently kill lunch pushes 🙃)
 - **M6 · the fun batch** — fine-grained craving tags, group veto rooms, weighted draw styles, history stats, image share cards, weather chip
 - **Refit rounds** — rooms moved KV → Durable Objects (read-your-writes veto sync), arrival-time + future-date planning with 📅 Upcoming, iOS-26-style tab bar, AI voice → filters, condition presets, money-window budget + distance sliders, food diary with verdict stars / spend / corrections / closed reports, QR + room-code joining, five meal slots (早餐 → 宵夜)
+- **Aug–Sep 2026 rounds** — search geometry (shift / wedge / multi-spot / corridor with a ≤ 3-call coverage planner), live map preview, per-visit food diary with averaged verdicts, chain & fast-food filters, four UI languages
 
 ## Privacy & security
 
@@ -165,6 +169,7 @@ Built July 2026, shipped in public from day one:
 - Strict CSP (`script-src 'self'`), zero third-party scripts, no analytics
 - Referrer + API restriction + your quota cap = the containment story for a client-side key
 - Honest caveat: anyone with your unlocked device can read localStorage — same trust level as your logged-in apps
+- The map preview fetches vector tiles from [OpenFreeMap](https://openfreemap.org) (`tiles.openfreemap.org`) — the only third-party connection in the app. It learns the rough area you are looking at (tile coordinates), never your keys, history or a precise fix; no cookies, no account. Self-hosting PMTiles on R2 is the documented escape hatch.
 
 ## Credits
 

@@ -2,12 +2,7 @@ import { computed } from 'vue'
 
 import type { LatLng, RelaxationSuggestion } from '@/types/models'
 import { runDraw, styleWeight, STALE_ORIGIN_METERS } from '@/lib/draw/engine'
-import {
-  CORRIDOR_MAX_LENGTH,
-  offsetPoint,
-  primaryAnchor,
-  type Geometry,
-} from '@/lib/geo/geometry'
+import { CORRIDOR_MAX_LENGTH, offsetPoint, primaryAnchor, type Geometry } from '@/lib/geo/geometry'
 import { effectivePatterns } from '@/lib/places/chains'
 import { plannedEpoch } from '@/lib/draw/planning'
 import { GooglePlacesError } from '@/lib/places/googlePlaces'
@@ -143,7 +138,7 @@ export function useDraw() {
         return false
       }
       const { origin, geometry } = resolved
-      const region = detectRegion(origin, 'HK')
+      const region = detectRegion(origin, drawStore.lastRegion)
       const provider = getProvider(settings.googleApiKey)
       const cond = drawStore.conditions
 
