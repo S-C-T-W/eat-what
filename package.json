@@ -17,7 +17,7 @@
     "typecheck": "vue-tsc -b",
     "lint": "eslint .",
     "format": "prettier --write src/",
-    "icons": "pwa-assets-generator --preset minimal-2023 public/logo.svg",
+    "icons": "pwa-assets-generator",
     "deploy": "pnpm build && CLOUDFLARE_ACCOUNT_ID=d46ee540323ceab49cf03f0c129963ac pnpm dlx wrangler@4.80.0 pages deploy dist --project-name eat-what",
     "worker:dev": "pnpm dlx wrangler@4.80.0 dev -c worker/wrangler.jsonc",
     "worker:deploy": "CLOUDFLARE_ACCOUNT_ID=d46ee540323ceab49cf03f0c129963ac pnpm dlx wrangler@4.80.0 deploy -c worker/wrangler.jsonc",
