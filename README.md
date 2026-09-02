@@ -2,6 +2,8 @@
 
 > 「今晚食乜好？」 — the one question that defeats every Hongkonger, every single day.
 
+> **Status (September 2026): frozen snapshot.** EatWhat continues as a closed-source product — the web edition plus native iOS/Android apps — so this repository receives no further changes, releases or pull requests. Everything here stays MIT-licensed and fully working: fork it, self-host it, keep using the live BYO-key app at [eat-what.samsonchoi.hk](https://eat-what.samsonchoi.hk) with your own key.
+
 **English · [繁體中文](README.zh-TW.md)** · **Live app: [eat-what.samsonchoi.hk](https://eat-what.samsonchoi.hk)**
 
 ## The story

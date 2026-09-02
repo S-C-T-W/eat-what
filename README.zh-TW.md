@@ -2,6 +2,8 @@
 
 > 「今晚食乜好？」——每個香港人每日都會敗給嘅問題。
 
+> **狀態（2026 年 9 月）：凍結快照。** 食乜好會以閉源產品形式繼續——網頁版加上 iOS／Android 原生 app——所以呢個 repo 唔會再有更新、release 或者接受 PR。呢度所有嘢維持 MIT 授權、照樣行得：可以 fork、自己部署，或者繼續用 [eat-what.samsonchoi.hk](https://eat-what.samsonchoi.hk) 自備金鑰嘅網頁版。
+
 **[English](README.md) · 繁體中文** · **線上版：[eat-what.samsonchoi.hk](https://eat-what.samsonchoi.hk)**
 
 ## 故事
