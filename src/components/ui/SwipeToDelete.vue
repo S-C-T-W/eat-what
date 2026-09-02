@@ -62,9 +62,12 @@ function onEnd() {
     >
       {{ label }}
     </button>
-    <!-- sliding content -->
+    <!-- sliding content — painted with the PAGE background so a translucent
+         card (e.g. the upcoming row's sky-950/40 in dark mode) composes over
+         the page colour, not over the red button underneath. Without this the
+         delete action bleeds through the row while it slides. -->
     <div
-      class="relative touch-pan-y"
+      class="relative touch-pan-y bg-orange-50 dark:bg-stone-950"
       :class="dragging ? '' : 'transition-transform duration-200'"
       :style="{ transform: `translateX(${offset}px)` }"
       @pointerdown="onStart"
